@@ -9,14 +9,14 @@
 title: MSXF - 小飞 # ex. I m Chuan
 name: XF # ex. DONGChuan
 email: 1263413089@qq.com
-location: NanJing, JiangSu# ex. Nice, France
+location: NanJing, JiangSu
 company: NJUPT
 company_url: https://www.njupt.edu.cn/
-github_url: https://github.com/msxfXF # ex. https://github.com/DONGChuan
-github_username: msxfXF# ex. DONGChuan
+github_url: https://github.com/msxfXF
+github_username: msxfXF
 description: 不论结果如何，有所期待，就足以令人欢喜
-favicon: face.jpg # Image must be in assets/images
-repository: msxfXF/msxfXF.github.io # ex. DONGChuan/DONGChuan.github.io
+favicon: face.jpg
+repository: msxfXF/msxfXF.github.io
 
 # The base hostname & protocol for your site
 # For local test, please use http://localhost:4000
@@ -61,9 +61,9 @@ navs:
     href: /
     label: Home
 
-#  -
-#    href: /open-source
-#    label: Open-Source
+  -
+    href: /open-source
+    label: Open-Source
 
   -
     href: /blog
@@ -89,5 +89,4 @@ analytics :
 
 # For about.html. Fell free to create your own!
 skill_software_keywords: [Java, Python, Deep Learning, IOT]
-skill_web_keywords: []
-skill_mobile_app_keywords: [Android]
+skill_mobile_app_keywords: [Android, ionic]
