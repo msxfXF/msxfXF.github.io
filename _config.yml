@@ -42,6 +42,7 @@ destination: ./_site
 
 quiet:    false
 defaults: []
+exclude: []
 
 kramdown:
   input: GFM
