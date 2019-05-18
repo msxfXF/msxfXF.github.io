@@ -3,6 +3,7 @@ layout: post
 title: 深度学习识别银行卡(一)————CTPN的配置
 category: DeepLearning
 tags: [DeepLearning]
+excerpt_separator: <!-- more -->
 excerpt: CTPN的简单了解和Ubuntu、Win10下的环境配置
 ---
 
@@ -10,6 +11,7 @@ excerpt: CTPN的简单了解和Ubuntu、Win10下的环境配置
 # CTPN简单了解
 CTPN:Connectionist Text Proposal Network 即 场景文本检测
 在文本识别中，CTPN有效利用了同一行文本不同字符之间的上下文，这是与一般物体检测不同的地方，同时作者认为预测文本的竖直位置比预测水平位置更为容易。
+
 <!-- more -->
 
 - CTPN使用了VGG-16前5个卷积层，得到feature map(W*H*C)
