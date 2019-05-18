@@ -3,7 +3,7 @@ layout: post
 title: 深度学习识别银行卡(一)————CTPN的配置
 category: DeepLearning
 tags: [DeepLearning]
-excerpt_separator:CTPN的简单了解和Ubuntu、Win10下的环境配置
+excerpt_separator: CTPN的简单了解和Ubuntu、Win10下的环境配置
 ---
 
 深度学习识别银行卡(一)————CTPN的配置
