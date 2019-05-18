@@ -17,7 +17,7 @@ github_username: msxfXF
 description: 不论结果如何，有所期待，就足以令人欢喜
 favicon: face.png
 repository: msxfXF/msxfXF.github.io
-
+excerpt_separator: '<!-- more -->'
 # The base hostname & protocol for your site
 # For local test, please use http://localhost:4000
 # For production, use your github page url. ex. http://dongchuan.github.io

@@ -10,6 +10,7 @@ excerpt_separator: CTPN的简单了解和Ubuntu、Win10下的环境配置
 # CTPN简单了解
 CTPN:Connectionist Text Proposal Network 即 场景文本检测
 在文本识别中，CTPN有效利用了同一行文本不同字符之间的上下文，这是与一般物体检测不同的地方，同时作者认为预测文本的竖直位置比预测水平位置更为容易。
+<!-- more -->
 
 - CTPN使用了VGG-16前5个卷积层，得到feature map(W*H*C)
 - 取3*3*C的窗口的特征，用于预测该位置k个anchor
