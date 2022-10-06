@@ -1,5 +1,5 @@
 GIT
-  remote: git://github.com/flori/json.git
+  remote: https://github.com/flori/json.git
   revision: 7f4cfd853f2c919d854fb95548a19980feff17e8
   branch: v1.8
   specs:
@@ -42,8 +42,8 @@ GEM
       minitest (~> 5.1)
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
-    addressable (2.6.0)
-      public_suffix (>= 2.0.2, < 4.0)
+    addressable (2.8.1)
+      public_suffix (>= 2.0.2, < 6.0)
     arel (6.0.4)
     builder (3.2.3)
     color (1.8)
@@ -122,7 +122,7 @@ GEM
       middleware
       thor
       thread_safe
-    public_suffix (3.0.3)
+    public_suffix (5.0.0)
     rack (1.6.11)
     rack-test (0.6.3)
       rack (>= 1.0)
