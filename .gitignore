@@ -3,3 +3,6 @@ dist/
 .env
 *.log
 node_modules/
+
+# Local writing guide
+BLOG_GUIDE.md
