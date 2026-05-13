@@ -1,0 +1,37 @@
+{
+  "paper": {
+    "arxiv_id": "2510.11967",
+    "title": "Scaling Long-Horizon LLM Agent via Context-Folding",
+    "authors": ["Weiwei Sun", "Miao Lu", "Zhan Ling", "Kang Liu", "Xuesong Yao", "Yiming Yang", "Jiecao Chen"],
+    "date": "2025-10-15",
+    "url": "https://arxiv.org/pdf/2510.11967",
+    "project_page": "https://context-folding.github.io/"
+  },
+  "blocks": [
+    {"id":"S001","page":1,"section":"Abstract","summary":"Context-Folding lets agents branch into subtasks and fold completed sub-trajectories into concise return summaries; FoldGRPO trains this behavior with process rewards."},
+    {"id":"S002","page":1,"section":"Introduction","summary":"Long-horizon agents suffer from performance degradation and efficiency costs when all tool calls and observations linearly accumulate in one context."},
+    {"id":"S003","page":2,"section":"Introduction","summary":"The proposed Folding Agent matches or outperforms ReAct baselines with 10x smaller active context on Deep Research and SWE benchmarks."},
+    {"id":"S004","page":3,"section":"2.1 Vanilla Formulation","summary":"Vanilla ReAct models each action conditioned on the full previous trajectory, causing context growth."},
+    {"id":"S005","page":3,"section":"2.2 Context Folding","summary":"Two tools implement context management: branch(description,prompt) and return(message); F folds action-observation segments between them."},
+    {"id":"S006","page":4,"section":"2.2 Context Folding","summary":"Inference uses KV-cache rollback to the branch position when a return is called, making folding efficient."},
+    {"id":"S007","page":4,"section":"2.2 Context Folding","summary":"The implementation is plan-execution: main thread plans and delegates; execution branches handle token-heavy subtasks without nested branches."},
+    {"id":"S008","page":5,"section":"2.3 FoldGRPO","summary":"FoldGRPO samples grouped folded trajectories, optimizes LLM tokens under folded context F, and adds token-level process reward to outcome reward."},
+    {"id":"S009","page":5,"section":"2.3.2 Process Reward Design","summary":"Process rewards include unfolded token penalty, out-of-scope penalty judged from branch prompt and return message, and failed-tool-call penalty."},
+    {"id":"S010","page":6,"section":"3 Experiment","summary":"Experiments cover BrowseComp-Plus for deep research and SWE-Bench Verified for agentic software engineering using Seed-OSS-36B-Instruct."},
+    {"id":"S011","page":7,"section":"4.1 Main Results","summary":"FoldGRPO reaches 0.620 Pass@1 on BrowseComp-Plus and 0.580 on SWE-Bench Verified with 32K active context and up to 10 branches."},
+    {"id":"S012","page":8,"section":"4.2-4.3","summary":"RL increases tool calls, branches, response tokens and searched pages; FoldGRPO improves finish rate and scope accuracy while shortening main trajectory."},
+    {"id":"S013","page":9,"section":"4.4","summary":"Folding performance improves with available branches and shows stronger advantage as combined-question complexity increases; it generalizes beyond trained branch count."},
+    {"id":"S014","page":10,"section":"4.5 Case Study","summary":"A case compresses 107K full context to 6K folded context across 4 branches."},
+    {"id":"S015","page":10,"section":"4.5.3 Parallel Branching","summary":"Parallel branching obtains 0.6133 Pass@1 on BrowseComp-Plus, similar to single-branch, suggesting task structure matters."},
+    {"id":"S016","page":11,"section":"Conclusion","summary":"Future work includes multi-layer context folding for hierarchical compression."}
+  ],
+  "figures": [
+    {"id":"F001","file":"fig1_examples_context_folding.png","page":2,"caption":"Examples of context folding in deep research and agentic coding."},
+    {"id":"F002","file":"fig2_method_foldgrpo.png","page":4,"caption":"Context Folding mechanism and FoldGRPO training loop."},
+    {"id":"T001","file":"table1_main_results_fig3_difficulty.png","page":7,"caption":"Main performance table and difficulty breakdown."},
+    {"id":"F004","file":"fig4_training_dynamics.png","page":8,"caption":"RL training dynamics: tool calls, branches, tokens, searched pages."},
+    {"id":"T002","file":"table2_ablation_fig5_scaling.png","page":9,"caption":"Ablation statistics and scaling/complexity curves."},
+    {"id":"F007","file":"fig7_case_study.png","page":10,"caption":"Case study showing tool call history and folded vs full context length."},
+    {"id":"F008","file":"fig8_training_cost.png","page":11,"caption":"Training time cost comparison."}
+  ]
+}
