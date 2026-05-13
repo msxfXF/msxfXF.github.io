@@ -861,3 +861,97 @@ h4 {
     padding: 22px;
   }
 }
+
+
+/* Normalized HTML post layout: keep one consistent reading measure */
+.article-wide {
+  width: min(900px, 100%);
+}
+
+.article-wide .article-header,
+.article-wide .prose,
+.article-wide .prose > p,
+.article-wide .prose > ul,
+.article-wide .prose > ol,
+.article-wide .prose > h2,
+.article-wide .prose > h3,
+.article-wide .prose > h4,
+.article-wide .prose > blockquote,
+.article-wide .prose > pre,
+.article-wide .prose > figure,
+.article-wide .prose > table,
+.article-wide .prose > .note-hero,
+.article-wide .prose > .insight-grid,
+.article-wide .prose > .callout-panel,
+.article-wide .prose > .pull-quote,
+.article-wide .prose > .wide,
+.article-wide .prose > .full-bleed {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.article-wide .article-header h1 {
+  max-width: 900px;
+  font-size: clamp(2.25rem, 4.3vw, 3.7rem);
+}
+
+.article-wide .prose > .insight-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.article-wide .prose > figure {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow-sm);
+}
+
+.article-wide .prose > figure img,
+.article-wide .prose > figure video,
+.article-wide .prose > figure canvas,
+.article-wide .prose > figure svg,
+.article-wide .prose > figure iframe {
+  width: auto;
+  max-width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  border: 0;
+}
+
+.article-wide .prose > figure img {
+  background: transparent;
+}
+
+.article-wide .prose > .note-hero,
+.article-wide .prose > .callout-panel {
+  padding: 26px;
+}
+
+@media (max-width: 1100px) {
+  .article-wide {
+    width: min(820px, 100%);
+  }
+}
+
+@media (max-width: 680px) {
+  .article-wide {
+    width: 100%;
+  }
+
+  .article-wide .prose > .insight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .article-wide .prose > figure {
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .article-wide .prose > .note-hero,
+  .article-wide .prose > .callout-panel {
+    padding: 20px;
+  }
+}
