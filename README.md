@@ -4,7 +4,9 @@ A clean, modern, zero-dependency static blog for notes, essays, and article inte
 
 ## Write a post
 
-Create a Markdown file under `content/posts/` with front matter:
+Create a Markdown or HTML file under `content/posts/` with front matter. Markdown is best for normal notes; HTML is useful when you need richer layout, embedded media, custom cards, or small interactive elements.
+
+Markdown example:
 
 ```md
 ---
@@ -15,6 +17,22 @@ tags: [Reading, Notes]
 ---
 
 Your content...
+```
+
+HTML example:
+
+```html
+---
+title: Interactive reading note
+description: A richer article layout
+date: 2026-05-13
+tags: [HTML, Notes]
+---
+<section class="note-hero">
+  <p class="note-kicker">HTML Article</p>
+  <h2>A more expressive note</h2>
+  <p>Write any HTML fragment here.</p>
+</section>
 ```
 
 ## Local build

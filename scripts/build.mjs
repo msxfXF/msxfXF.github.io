@@ -26,7 +26,7 @@ function slugify(input) {
   return String(input)
     .trim()
     .toLowerCase()
-    .replace(/\.md$/i, '')
+    .replace(/\.(md|html)$/i, '')
     .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
     .replace(/^-+|-+$/g, '') || 'post';
 }
@@ -172,7 +172,7 @@ function pageShell({ title, description, body, current = '/', type = 'website' }
 
 async function readPosts() {
   if (!existsSync(postsDir)) return [];
-  const files = (await readdir(postsDir)).filter((file) => file.endsWith('.md'));
+  const files = (await readdir(postsDir)).filter((file) => /\.(md|html)$/i.test(file));
   const posts = [];
   for (const file of files) {
     const source = await readFile(path.join(postsDir, file), 'utf8');
@@ -188,8 +188,9 @@ async function readPosts() {
       slug,
       url: `/posts/${slug}/`,
       body,
-      html: renderMarkdown(body),
-      readingTime: Math.max(1, Math.ceil(body.replace(/\s+/g, '').length / 500))
+      format: path.extname(file).slice(1).toLowerCase(),
+      html: path.extname(file).toLowerCase() === '.html' ? body.trim() : renderMarkdown(body),
+      readingTime: Math.max(1, Math.ceil(body.replace(/<[^>]*>/g, '').replace(/\s+/g, '').length / 500))
     });
   }
   return posts.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -198,7 +199,7 @@ async function readPosts() {
 function postCard(post) {
   const tags = post.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
   return `<article class="post-card">
-    <div class="post-meta"><time datetime="${escapeHtml(post.date)}">${formatDate(post.date)}</time><span>${post.readingTime} min read</span></div>
+    <div class="post-meta"><time datetime="${escapeHtml(post.date)}">${formatDate(post.date)}</time><span>${post.readingTime} min read</span><span>${post.format.toUpperCase()}</span></div>
     <h2><a href="${post.url}">${escapeHtml(post.title)}</a></h2>
     <p>${escapeHtml(post.description)}</p>
     <div class="card-footer">
@@ -270,7 +271,7 @@ function renderPost(post) {
     body: `<article class="article">
       <header class="article-header">
         <a class="back-link" href="/posts/">← 返回文章</a>
-        <div class="post-meta"><time datetime="${escapeHtml(post.date)}">${formatDate(post.date)}</time><span>${post.readingTime} min read</span></div>
+        <div class="post-meta"><time datetime="${escapeHtml(post.date)}">${formatDate(post.date)}</time><span>${post.readingTime} min read</span><span>${post.format.toUpperCase()}</span></div>
         <h1>${escapeHtml(post.title)}</h1>
         <p>${escapeHtml(post.description)}</p>
         <div class="tags">${post.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>
