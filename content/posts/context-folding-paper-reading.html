@@ -1,0 +1,226 @@
+---
+title: Context-Folding 论文精读：把长程 Agent 的上下文折起来
+description: 解读 Context-Folding 如何用 branch/return 与 FoldGRPO，让长程 Agent 在小活跃上下文里完成深度研究和代码任务。
+date: 2026-05-13
+tags: [Paper Reading, AI, LLM, HTML]
+---
+<section class="note-hero">
+  <p class="note-kicker">Paper Reading · arXiv:2510.11967</p>
+  <h2>一句话：这篇论文不是继续把上下文窗口做大，而是教 Agent 主动“折叠”自己的工作记忆。</h2>
+  <p><strong>论文：</strong>Scaling Long-Horizon LLM Agent via Context-Folding<br>
+  <strong>作者：</strong>Weiwei Sun, Miao Lu, Zhan Ling, Kang Liu, Xuesong Yao, Yiming Yang, Jiecao Chen<br>
+  <strong>机构：</strong>ByteDance Seed, Carnegie Mellon University, Stanford University<br>
+  <strong>日期：</strong>2025-10-15 · <strong>链接：</strong><a href="https://arxiv.org/pdf/2510.11967">PDF</a> · <a href="https://context-folding.github.io/">Project Page</a><br>
+  <strong>适合读者：</strong>熟悉 ReAct、工具调用 Agent、RLVR / GRPO 或 SWE-Bench 的读者。阅读时长约 18 分钟。</p>
+</section>
+
+<div class="insight-grid">
+  <article class="insight-card">
+    <span>01 · Problem</span>
+    <h3>长程 Agent 的瓶颈不是只有窗口长度</h3>
+    <p>ReAct 式 Agent 会把推理、工具调用和 observation 线性塞回同一个上下文；任务越长，模型越难找相关信息，attention 和 KV-cache 成本也越高。（p.1, S002）</p>
+  </article>
+  <article class="insight-card">
+    <span>02 · Mechanism</span>
+    <h3>branch / return 把子任务变成临时轨迹</h3>
+    <p>Agent 可 branch 出独立工作上下文，做完后 return 一段结果摘要；中间搜索、bash、编辑等 token-heavy 过程被折叠，只把结论留在主线程。（p.3, S005）</p>
+  </article>
+  <article class="insight-card">
+    <span>03 · Training</span>
+    <h3>FoldGRPO 把“会折叠”训练成能力</h3>
+    <p>论文在 GRPO 上加入动态 folded context 和 token-level process reward，惩罚主线程里未折叠的重操作、越界分支和失败工具调用。（p.5, S008-S009）</p>
+  </article>
+  <article class="insight-card">
+    <span>04 · Result</span>
+    <h3>32K 活跃上下文，最多 10 个分支</h3>
+    <p>Folding Agent + FoldGRPO 在 BrowseComp-Plus 达到 0.620 Pass@1，在 SWE-Bench Verified 达到 0.580；活跃上下文只有 32K，但总 token 预算可到 32K × 10。（p.7, S011）</p>
+  </article>
+</div>
+
+<section class="callout-panel">
+  <h3>我的快速判断</h3>
+  <ul>
+    <li><strong>这篇论文真正有价值的点：</strong>它把“上下文管理”从外部工程策略，变成了 Agent 可学习、可优化的行为。</li>
+    <li><strong>最该关注的风险：</strong>return 摘要是信息瓶颈；一旦摘要漏掉关键证据，主线程无法恢复被折叠的细节。</li>
+    <li><strong>最像工程可落地的部分：</strong>branch/return API、主线程规划 + 分支执行、KV-cache rollback，都可以直接映射到现有 Agent 框架。</li>
+  </ul>
+</section>
+
+<h2>1. 这篇论文到底解决什么问题？</h2>
+<p>论文的问题设定很直接：LLM Agent 正在被用于 deep research 和 agentic coding 这类长程任务，但经典 ReAct 框架会把完整交互历史 <code>(a1,o1,...,aT,oT)</code> 全部放进下一步生成上下文。工具调用越多，observation 越长，主上下文越像一个不断膨胀的日志文件。（p.1, S002; p.3, S004）</p>
+<p>长上下文带来的问题有两层：</p>
+<ul>
+  <li><strong>能力层：</strong>模型在极长上下文中检索和使用相关信息会退化；即使信息还在窗口内，也未必能被稳定利用。</li>
+  <li><strong>效率层：</strong>attention 的计算成本和 KV-cache 管理开销随上下文增长而变重，长程任务的推理和训练都更贵。</li>
+</ul>
+<p>已有两类解法都不彻底。摘要式方法通常在上下文满时触发一次 post-hoc summary，可能突然打断当前工作流；多 Agent 系统把任务分给不同角色，但往往依赖手工流程，难以端到端优化。Context-Folding 的核心假设是：上下文压缩不应该只是外部机制，而应该成为 Agent 主动学会的技能。（p.1, S002; p.11, S016）</p>
+
+<figure>
+  <img src="/assets/papers/arxiv-2510-11967/fig1_examples_context_folding.png" alt="论文 Figure 1：Context Folding 在深度研究和代码任务中的示例">
+  <figcaption><strong>论文图 1。</strong>左边是 deep research：搜索、打开网页、验证候选等 token-heavy 操作被放进分支；右边是 agentic coding：探索文件、写测试、定位问题等步骤也被分支化。读图重点不是“用了子 Agent”，而是主线程只留下每个分支的可用结论。（p.2, F001）</figcaption>
+</figure>
+
+<h2>2. 方法总览：Context Folding 是一种可学习的工作记忆管理</h2>
+<p>Context Folding 引入两个特殊动作：</p>
+<ul>
+  <li><code>branch(description, prompt)</code>：从主线程创建一个临时子轨迹，用独立工作上下文完成局部子任务。</li>
+  <li><code>return(message)</code>：结束分支，把分支中间步骤折叠掉，只把 <code>message</code> 作为结果写回主线程。</li>
+</ul>
+<p>用论文符号说，普通 ReAct 在第 <code>i</code> 步以完整历史为条件生成动作；Context Folding 则用一个上下文管理器 <code>F(τ&lt;i)</code> 先折叠 branch-return 之间的片段，再把折叠后的历史喂给模型。（p.3, S005）</p>
+
+<pre><code>普通 ReAct:
+  next_action ~ πθ(action | question, full_history)
+
+Context Folding:
+  next_action ~ πθ(action | question, F(full_history))
+
+F 的效果:
+  main:   ... branch ... many actions/observations ... return(summary) ...
+  folded: ... branch_created_marker, return(summary) ...</code></pre>
+
+<p>论文还给了一个关键工程细节：推理时可以管理 KV-cache。调用 <code>return</code> 时，系统把 KV-cache 回滚到对应 <code>branch</code> 位置；因为分支前的 prefix 与主线程一致，所以折叠在推理上不是简单“重新拼 prompt”，而是有缓存友好的实现路径。（p.4, S006）</p>
+
+<figure>
+  <img src="/assets/papers/arxiv-2510-11967/fig2_method_foldgrpo.png" alt="论文 Figure 2：Context Folding 机制与 FoldGRPO 训练流程">
+  <figcaption><strong>论文图 2。</strong>左侧展示主线程和子任务分支如何通过 branch / return 连接；右侧展示 FoldGRPO：先 rollout 多条 folded 轨迹，再计算 outcome reward 与 fold reward，做 group normalization 后更新策略。（p.4, F002）</figcaption>
+</figure>
+
+<h3>2.1 plan-execution：主线程负责规划，分支负责执行</h3>
+<p>作者把 Context Folding 实例化成 plan-execution 框架：</p>
+<ul>
+  <li><strong>Planning State：</strong>主线程做高层推理、任务分解和分支决策；论文明确鼓励主线程避免 token-intensive 工具使用。</li>
+  <li><strong>Execution State：</strong>分支执行具体子任务，例如搜索网页、读文件、跑测试。为避免嵌套复杂度，执行态中禁用继续创建新分支。</li>
+</ul>
+<p>这点很重要：它不是任意递归多 Agent，而是一种强约束的“主线程调度 + 一层分支执行”。这种结构降低了训练和信用分配难度，也让 return 摘要成为清晰的压缩边界。（p.4, S007）</p>
+
+<h2>3. FoldGRPO：训练 Agent 学会什么时候折、怎么折</h2>
+<p>如果只给最终成败奖励，Agent 未必会自然学会良好的折叠行为。作者观察到两个失败模式：第一，Agent 不会战略性规划，把 token-heavy 操作留在主线程，导致上下文预算快速耗尽；第二，Agent 进入分支后不及时 return，或者在分支里继续做越界任务。（p.5, S009）</p>
+<p>FoldGRPO 因此在标准 GRPO / RLVR 思路上加入两个设计：</p>
+<ul>
+  <li><strong>动态 folded context：</strong>优化每个 LLM token 时，条件上下文不是完整历史，而是经过 <code>F</code> 折叠后的历史。</li>
+  <li><strong>token-level process reward：</strong>除了最终 outcome reward，还给 token 级别的行为奖励/惩罚，直接塑造 branch-return 习惯。</li>
+</ul>
+
+<h3>3.1 三类过程奖励</h3>
+<ul>
+  <li><strong>Unfolded token penalty：</strong>当主线程总上下文超过工作窗口 50% 后，对主线程 token 施加 <code>Qi,t = -1</code>，但创建 branch 的回合除外。直觉是：主线程快变胖了，就应该把重操作放进分支。</li>
+  <li><strong>Out-of-scope penalty：</strong>用 GPT-5-nano 根据 branch prompt 和 return message 判断分支是否做了子任务外的事；若越界，对该分支 token 施加 <code>Qi,t = -0.2</code>。直觉是：分支不是新主线，要聚焦。</li>
+  <li><strong>Failure penalty：</strong>失败工具调用回合施加 <code>Qi,t = -1</code>。直觉是：折叠不能掩盖无效工具使用。</li>
+</ul>
+<p>我认为这三类奖励的组合是论文最关键的训练贡献：它没有只奖励“少 token”，而是同时奖励<strong>主线程轻量、分支聚焦、工具有效</strong>。这更接近真实 Agent 工程中想要的行为。（p.5, S008-S009）</p>
+
+<h2>4. 实验：32K 活跃上下文是否能打过 327K ReAct？</h2>
+<p>论文评估两类长程任务：</p>
+<ul>
+  <li><strong>Deep Research：</strong>BrowseComp-Plus，680 个训练样本、150 个评测样本；工具是 <code>search(query, topk)</code> 和 <code>open_page(url)</code>。</li>
+  <li><strong>Agentic SWE：</strong>SWE-Bench Verified 作为评测集；训练数据来自 SWE-Gym 和 SWE-Rebench 中难度适中的实例，共 740 个；工具包括 <code>execute_bash</code>、<code>str_replace_editor</code> 和 <code>think</code>。</li>
+</ul>
+<p>基础模型是 Seed-OSS-36B-Instruct。Folding Agent 的单次 LLM 最大上下文是 32,768，允许最多 10 个分支，因此理论最大 token 预算为 327,680；推理使用 greedy decoding。（p.6, S010）</p>
+
+<figure>
+  <img src="/assets/papers/arxiv-2510-11967/table1_main_results_fig3_difficulty.png" alt="论文 Table 1 和 Figure 3：主结果与不同难度任务表现">
+  <figcaption><strong>论文表 1 / 图 3。</strong>FoldGRPO 版本在 BrowseComp-Plus 上达到 0.620 Pass@1，在 SWE-Bench Verified 上达到 0.580。相比 Seed-OSS-36B 的 327K ReAct baseline，BrowseComp-Plus 提升 +14.2 个点，SWE-Bench 提升 +2.8 个点；难度拆分显示 medium/hard 子集收益更明显。（p.7, T001）</figcaption>
+</figure>
+
+<h3>4.1 主结果怎么读？</h3>
+<p>表 1 中最值得看的是三组可比 baseline：</p>
+<ul>
+  <li><strong>32K ReAct：</strong>同样活跃上下文，BrowseComp-Plus 只有 0.286，SWE-Bench Verified 为 0.436。</li>
+  <li><strong>327K ReAct：</strong>直接把上下文拉长，BrowseComp-Plus 为 0.478，SWE-Bench Verified 为 0.552。</li>
+  <li><strong>Summary Agent：</strong>给 32K × 10 的摘要预算，RL 后 BrowseComp-Plus 为 0.527，SWE-Bench Verified 为 0.550。</li>
+</ul>
+<p>Folding Agent + FoldGRPO 的结果是 0.620 / 0.580。也就是说，这篇论文的论证重点不是“折叠比所有大模型都强”——GPT-5 在表中依然更强——而是<strong>在 36B 级别模型上，学会主动上下文管理能比单纯长上下文或摘要策略更有效</strong>。（p.7-p.8, S011-S012）</p>
+
+<h2>5. 消融：FoldGRPO 到底改变了什么行为？</h2>
+<p>论文表 2 的行为统计比主榜单更能说明问题。标准 GRPO 会提高最终表现，但也可能带来坏习惯：轨迹变长、分支不够聚焦、完成率下降。FoldGRPO 通过过程奖励修正这些问题。</p>
+
+<figure>
+  <img src="/assets/papers/arxiv-2510-11967/table2_ablation_fig5_scaling.png" alt="论文 Table 2 和 Figure 5：行为统计、上下文长度和任务复杂度消融">
+  <figcaption><strong>论文表 2 / 图 5。</strong>FoldGRPO 在 BrowseComp-Plus 上把 Finish 提到 0.935、Scope 提到 0.895，并把主轨迹长度降到 7,752；在 SWE-Bench Verified 上也把主轨迹长度降到 8,885。图 5 显示 Folding 在更高 token 预算和更复杂组合问题中优势更明显。（p.9, T002）</figcaption>
+</figure>
+
+<p>几个数字值得单独记：</p>
+<ul>
+  <li>BrowseComp-Plus：FoldGRPO 的主线程长度为 7,752，而普通 GRPO 是 22,285；Finish 从 0.738 提到 0.935。</li>
+  <li>SWE-Bench Verified：FoldGRPO 的主线程长度为 8,885，而普通 GRPO 是 48,908；Scope 从 0.419 提到 0.754。</li>
+  <li>论文称其在处理超过 100K 总 token 的同时，将主上下文压到约 8K，达到超过 90% 的上下文压缩。（p.8-p.9, S012）</li>
+</ul>
+<p>这说明 FoldGRPO 不是简单让模型“少说话”，而是让模型把 token 花在分支里，再把主线程变成压缩后的决策日志。</p>
+
+<figure>
+  <img src="/assets/papers/arxiv-2510-11967/fig4_training_dynamics.png" alt="论文 Figure 4：RL 训练过程中工具调用、分支数、响应 token 和搜索页面数增加">
+  <figcaption><strong>论文图 4。</strong>RL 训练后，工具调用数、分支数、响应 token 数和搜索页面数都上升，hard 任务增长最明显。作者的解释是：Agent 学会给复杂问题分配更多交互和计算，而不是被短上下文迫使过早停止。（p.8, F004）</figcaption>
+</figure>
+
+<h2>6. 长度泛化与案例：折叠真的留下了足够信息吗？</h2>
+<p>论文做了两个进一步分析。第一，改变分支数来改变最大 token 预算：Folding 在不同预算下都超过 ReAct，但 320K 之后收益趋于平台，因为多数任务已经完成。第二，把多个简单问题合成一个复合问题；当组合问题数量从 1 增到 50 时，Folding 的相对优势更明显。特别是，模型训练时最多使用 10 个分支，但在 50 个组合问题上会自适应使用平均 32.6 个分支。（p.9, S013）</p>
+
+<figure>
+  <img src="/assets/papers/arxiv-2510-11967/fig7_case_study.png" alt="论文 Figure 7：BrowseComp-Plus 案例中工具调用历史和上下文长度变化">
+  <figcaption><strong>论文图 7。</strong>案例中 Agent 为寻找满足条件的研究出版物创建 4 个分支，完整上下文约 107K，折叠后主上下文约 6K。蓝线说明每次 return 后主上下文显著回落；红线则是如果不折叠会持续累积的上下文长度。（p.10, F007; S014）</figcaption>
+</figure>
+
+<p>这个案例也暴露了方法的核心假设：return message 必须保留足够“决策相关”的信息。如果 return 只写“已搜索，没找到”，主线程就失去可审计证据；如果 return 把所有网页片段都塞回去，又失去折叠意义。所以真正难的是<strong>学会写有用的分支摘要</strong>，而不仅是学会调用 return。</p>
+
+<h2>7. 与摘要、多 Agent 的关系</h2>
+<p>Context Folding 与摘要式记忆、传统多 Agent 都相似，但边界不同：</p>
+<ul>
+  <li><strong>相对摘要式方法：</strong>它不是上下文满了才被动总结，而是任务执行过程中主动决定哪些子轨迹应当隔离和折叠。</li>
+  <li><strong>相对多 Agent：</strong>分支像临时子 Agent，但没有预定义角色；主线程和分支共享 branch 前的 prefix，因此更适合 KV-cache；分支与主线程交错执行，而非默认并行。</li>
+</ul>
+<p>论文还尝试了 parallel branching：在 BrowseComp-Plus 上达到 0.6133 Pass@1，与单分支版本相近；作者推测 BrowseComp-Plus 更偏 depth-first，因此并行未带来更高分数。这个结果提醒我们：折叠机制不等于并行机制，是否并行要看任务结构。（p.5, S006; p.10-p.11, S015）</p>
+
+<figure>
+  <img src="/assets/papers/arxiv-2510-11967/fig8_training_cost.png" alt="论文 Figure 8：ReAct 327K 与 Folding 32K x 10 的训练时间成本对比">
+  <figcaption><strong>论文图 8。</strong>训练时间上，327K ReAct 的 rollout 和训练 step 都更慢；Folding 的主线程成本更低。但注意，图中 rollout 时间只测主线程耗时，分支并行/异步实现会影响真实系统端到端成本。（p.10-p.11, F008）</figcaption>
+</figure>
+
+<h2>8. 局限与我会继续追问的问题</h2>
+<div class="insight-grid">
+  <article class="insight-card">
+    <span>Q1</span>
+    <h3>return 摘要可验证吗？</h3>
+    <p>论文评估最终成败和 scope，但真实场景还需要检查分支摘要是否忠实于被折叠证据。否则 Agent 可能产生“压缩幻觉”。</p>
+  </article>
+  <article class="insight-card">
+    <span>Q2</span>
+    <h3>谁来决定摘要粒度？</h3>
+    <p>当前 return message 由模型写。对代码任务，可能需要结构化字段：改动文件、复现命令、失败日志、测试结论，而不是自由文本。</p>
+  </article>
+  <article class="insight-card">
+    <span>Q3</span>
+    <h3>过程奖励是否依赖强 judge？</h3>
+    <p>Out-of-scope penalty 使用 GPT-5-nano 判断分支是否越界。若换成更弱或更便宜的 judge，训练信号会怎样变化？</p>
+  </article>
+  <article class="insight-card">
+    <span>Q4</span>
+    <h3>多层折叠如何做信用分配？</h3>
+    <p>作者把多层 Context Folding 列为未来方向。若 fold 还能继续 fold，训练时 reward 如何回传到内层摘要，是一个更难的问题。</p>
+  </article>
+</div>
+
+<h2>9. 工程启发：如果要把它放进 Agent 框架</h2>
+<p>我会优先实现一个保守版本：</p>
+<pre><code>1. 主线程只允许：规划、创建分支、读取 return 摘要、最终决策。
+2. 分支允许：搜索 / bash / 文件编辑 / 测试等 token-heavy 操作。
+3. return 使用结构化模板：
+   - subtask
+   - actions_taken
+   - key_evidence
+   - result
+   - caveats
+   - next_recommendation
+4. 主线程保留 source handles，而不保留完整 observation。
+5. 对 return 做自动校验：抽样回放分支证据，检查摘要是否遗漏或歪曲。</code></pre>
+<p>这样即使没有立即做 FoldGRPO 训练，也可以先把 Context Folding 当作一种 Agent runtime 设计：用 API 和日志结构强迫主线程保持短、分支保持聚焦。训练部分则可作为后续优化。</p>
+
+<blockquote class="pull-quote">
+  <p>这篇论文最值得带走的思想是：长程智能体的上下文不是一个越大越好的容器，而是一种需要被策略性管理的工作记忆。</p>
+</blockquote>
+
+<h2>参考与出处</h2>
+<ul>
+  <li>Sun et al., <em>Scaling Long-Horizon LLM Agent via Context-Folding</em>, arXiv:2510.11967, 2025-10-15.</li>
+  <li>本文图表均为论文原图裁剪；source map 存放于 <code>/assets/papers/arxiv-2510-11967/source_map.json</code>。</li>
+  <li>本读书笔记中的 Sxxx / Fxxx / Txxx 指向本地 source map 中的段落、图和表。</li>
+</ul>
