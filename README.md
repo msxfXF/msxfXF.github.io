@@ -28,4 +28,4 @@ The generated site is in `dist/`.
 
 ## Deploy
 
-This repository includes a GitHub Actions workflow for GitHub Pages. Push to `main`, then set the repository Pages source to **GitHub Actions** if it is not enabled automatically.
+This site is designed for GitHub Pages user sites. Build locally with `node scripts/build.mjs`, then publish the contents of `dist/` to the repository default branch root.
