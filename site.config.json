@@ -1,0 +1,24 @@
+{
+  "title": "MSXF Notes",
+  "description": "分享、阅读、文章解读与思考札记。",
+  "author": "MSXF",
+  "url": "https://msxfXF.github.io",
+  "language": "zh-CN",
+  "nav": [
+    {
+      "label": "首页",
+      "href": "/"
+    },
+    {
+      "label": "文章",
+      "href": "/posts/"
+    },
+    {
+      "label": "关于",
+      "href": "/about/"
+    }
+  ],
+  "social": {
+    "github": "https://github.com/msxfXF"
+  }
+}
