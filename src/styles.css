@@ -761,3 +761,103 @@ h4 {
   }
   .prose .insight-grid { grid-template-columns: 1fr; }
 }
+
+/* Wide layout for HTML posts */
+.article-wide {
+  width: min(var(--site-width), 100%);
+}
+
+.article-wide .article-header {
+  width: min(var(--content-width), 100%);
+  margin-inline: auto;
+}
+
+.article-wide .prose {
+  width: 100%;
+}
+
+.article-wide .prose > p,
+.article-wide .prose > ul,
+.article-wide .prose > ol,
+.article-wide .prose > h2,
+.article-wide .prose > h3,
+.article-wide .prose > h4,
+.article-wide .prose > blockquote:not(.pull-quote),
+.article-wide .prose > pre {
+  width: min(var(--content-width), 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.article-wide .prose > figure,
+.article-wide .prose > .table-wrap,
+.article-wide .prose > .note-hero,
+.article-wide .prose > .insight-grid,
+.article-wide .prose > .callout-panel,
+.article-wide .prose > .pull-quote,
+.article-wide .prose > .wide,
+.article-wide .prose > .full-bleed {
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+
+.article-wide .prose > table {
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.article-wide .prose > figure img,
+.article-wide .prose > figure video,
+.article-wide .prose > figure canvas,
+.article-wide .prose > figure svg,
+.article-wide .prose > figure iframe {
+  width: 100%;
+  max-width: 100%;
+}
+
+.article-wide .prose > .insight-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.article-wide .prose > .callout-panel,
+.article-wide .prose > .note-hero {
+  padding: 30px;
+}
+
+@media (max-width: 1100px) {
+  .article-wide .prose > .insight-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .article-wide {
+    width: 100%;
+  }
+
+  .article-wide .article-header,
+  .article-wide .prose > p,
+  .article-wide .prose > ul,
+  .article-wide .prose > ol,
+  .article-wide .prose > h2,
+  .article-wide .prose > h3,
+  .article-wide .prose > h4,
+  .article-wide .prose > blockquote:not(.pull-quote),
+  .article-wide .prose > pre {
+    width: 100%;
+  }
+
+  .article-wide .prose > .insight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .article-wide .prose > .callout-panel,
+  .article-wide .prose > .note-hero {
+    padding: 22px;
+  }
+}

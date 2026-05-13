@@ -263,12 +263,16 @@ function renderPosts(posts) {
 }
 
 function renderPost(post) {
+  const isHtmlPost = post.format === 'html';
+  const articleClass = isHtmlPost ? 'article article-wide article-html' : 'article';
+  const proseClass = isHtmlPost ? 'prose prose-html' : 'prose';
+
   return pageShell({
     title: post.title,
     description: post.description,
     current: '/posts/',
     type: 'article',
-    body: `<article class="article">
+    body: `<article class="${articleClass}">
       <header class="article-header">
         <a class="back-link" href="/posts/">← 返回文章</a>
         <div class="post-meta"><time datetime="${escapeHtml(post.date)}">${formatDate(post.date)}</time><span>${post.readingTime} min read</span><span>${post.format.toUpperCase()}</span></div>
@@ -276,7 +280,7 @@ function renderPost(post) {
         <p>${escapeHtml(post.description)}</p>
         <div class="tags">${post.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>
       </header>
-      <div class="prose">${post.html}</div>
+      <div class="${proseClass}">${post.html}</div>
     </article>`
   });
 }
