@@ -163,7 +163,8 @@ function pageShell({ title, description, body, current = '/', type = 'website' }
   </header>
   <main>${body}</main>
   <footer class="site-footer">
-    <p>© ${new Date().getFullYear()} ${escapeHtml(config.title)}. Built for quiet reading and clear thinking.</p>
+    <p>© ${new Date().getFullYear()} ${escapeHtml(config.title)}</p>
+    <p>Notes, readings, and considered interpretation.</p>
   </footer>
 </body>
 </html>`;
@@ -200,7 +201,10 @@ function postCard(post) {
     <div class="post-meta"><time datetime="${escapeHtml(post.date)}">${formatDate(post.date)}</time><span>${post.readingTime} min read</span></div>
     <h2><a href="${post.url}">${escapeHtml(post.title)}</a></h2>
     <p>${escapeHtml(post.description)}</p>
-    <div class="tags">${tags}</div>
+    <div class="card-footer">
+      <div class="tags">${tags}</div>
+      <a class="read-more" href="${post.url}" aria-label="Read ${escapeHtml(post.title)}">阅读全文</a>
+    </div>
   </article>`;
 }
 
@@ -217,13 +221,20 @@ function renderHome(posts) {
     description: config.description,
     current: '/',
     body: `<section class="hero">
-      <p class="eyebrow">Reading · Notes · Interpretation</p>
-      <h1>把值得反复阅读的内容，沉淀成清晰的思考。</h1>
-      <p class="hero-copy">${escapeHtml(config.description)}</p>
-      <div class="hero-actions">
-        <a class="button primary" href="/posts/">浏览文章</a>
-        <a class="button ghost" href="/about/">了解本站</a>
+      <div class="hero-content">
+        <p class="eyebrow">Reading / Notes / Interpretation</p>
+        <h1>把值得反复阅读的内容，整理成可复用的思考。</h1>
+        <p class="hero-copy">${escapeHtml(config.description)}</p>
+        <div class="hero-actions">
+          <a class="button primary" href="/posts/">浏览文章</a>
+          <a class="button ghost" href="/about/">关于本站</a>
+        </div>
       </div>
+      <aside class="hero-panel" aria-label="Site focus">
+        <span>Focus</span>
+        <strong>Article Interpretation</strong>
+        <p>用摘要、判断和追问，把碎片阅读沉淀为长期笔记。</p>
+      </aside>
     </section>
     <section class="section-head">
       <div>
