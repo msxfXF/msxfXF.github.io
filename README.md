@@ -38,12 +38,18 @@ tags: [HTML, Notes]
 ## Local build
 
 ```bash
-node scripts/build.mjs
-node scripts/serve.mjs
+npm run build
+npm run serve
 ```
 
 The generated site is in `dist/`.
 
 ## Deploy
 
-This site is designed for GitHub Pages user sites. Build locally with `node scripts/build.mjs`, then publish the contents of `dist/` to the repository default branch root.
+Source files live on `main`. The live GitHub Pages site is deployed from the `master` branch root, which contains the built `dist/` output. Pushing `main` alone does not update the live site.
+
+```bash
+npm run deploy
+```
+
+The deploy script builds the site, syncs `dist/` into a temporary worktree based on `origin/master`, commits deployment changes if needed, and pushes `HEAD:master`.
