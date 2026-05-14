@@ -1,0 +1,254 @@
+---
+title: ARPO 论文精读：为什么 Agent RL 要在工具调用后分叉探索
+description: 解读 ARPO 如何用工具调用后的高熵信号做自适应 rollout，并用 advantage attribution 训练多轮工具型 Agent。
+date: 2026-05-14
+tags: [Paper Reading, AI, LLM, HTML]
+---
+<section class="note-hero">
+  <p class="note-kicker">Paper Reading · arXiv:2507.19849</p>
+  <h2>一句话：ARPO 把 Agent RL 的探索重点，从“整条轨迹多采几遍”移动到“工具反馈后最不确定的几步”。</h2>
+  <p><strong>论文：</strong>Agentic Reinforced Policy Optimization<br>
+  <strong>作者：</strong>Guanting Dong, Hangyu Mao, Kai Ma, Licheng Bao, Yifei Chen, Zhongyuan Wang, Zhongxia Chen, Jiazhen Du, Huiyang Wang, Fuzheng Zhang, Guorui Zhou, Yutao Zhu, Ji-Rong Wen, Zhicheng Dou<br>
+  <strong>机构：</strong>Renmin University of China, Kuaishou Technology<br>
+  <strong>日期：</strong>2025-07-26 · <strong>链接：</strong><a href="https://arxiv.org/abs/2507.19849">arXiv</a> · <a href="https://arxiv.org/pdf/2507.19849">PDF</a> · <a href="https://github.com/dongguanting/ARPO">Code</a><br>
+  <strong>适合读者：</strong>熟悉 RLVR / GRPO、ReAct、搜索增强 Agent、tool-use training 的读者。阅读时长约 20 分钟。</p>
+</section>
+
+<div class="insight-grid">
+  <article class="insight-card">
+    <span>01 · Problem</span>
+    <h3>Trajectory-level RL 太粗</h3>
+    <p>现有 RLVR 往往把完整轨迹当成采样单位：答案对了就整条轨迹增益，错了就整条轨迹受罚。但多轮工具型 Agent 的关键行为常发生在某次搜索、浏览或代码执行之后。（p.1-p.2, S001-S002）</p>
+  </article>
+  <article class="insight-card">
+    <span>02 · Observation</span>
+    <h3>工具反馈后 10-50 个 token 熵会飙升</h3>
+    <p>论文的先导实验发现，工具调用后的短窗口里 token entropy 明显上升；搜索反馈比 Python 输出更不确定。这给“在哪里加大探索”提供了可测信号。（p.4, S003）</p>
+  </article>
+  <article class="insight-card">
+    <span>03 · Method</span>
+    <h3>高熵处局部分叉，而不是全程重采样</h3>
+    <p>ARPO 先保留一部分全局 rollout，再把剩余预算留给工具调用后的局部分支：当 <code>P_t = α + β·ΔH_t</code> 超过阈值，就从当前节点 Branch 出多条后续路径。（p.5, S005-S006）</p>
+  </article>
+  <article class="insight-card">
+    <span>04 · Result</span>
+    <h3>13 个 benchmark + 约一半工具预算</h3>
+    <p>论文报告 ARPO 在计算推理、知识推理和 deep search 共 13 个 benchmark 上优于 trajectory-level RL，并在 Qwen2.5-7B 对比中用约一半工具调用达到更高总体准确率。（p.9-p.11, T001-T002, S011）</p>
+  </article>
+</div>
+
+<section class="callout-panel">
+  <h3>我的快速判断</h3>
+  <ul>
+    <li><strong>最有启发的点：</strong>把 token entropy 当作 Agent 训练中的“局部探索路标”，比盲目增加完整轨迹数更贴近工具调用任务的结构。</li>
+    <li><strong>最值得复现的模块：</strong>adaptive rollout + shared/individual advantage accounting。哪怕不用完整 ARPO，也可以先在日志里记录 post-tool entropy 和分支收益。</li>
+    <li><strong>最需要警惕的风险：</strong>高熵并不总等于有价值探索；它也可能只是搜索结果噪声、网页污染、格式漂移或模型困惑。</li>
+  </ul>
+</section>
+
+<h2>1. 这篇论文到底解决什么问题？</h2>
+<p>ARPO 关注的是 <strong>LLM-based tool-use agent 的 RL 训练</strong>。这类 Agent 在推理中会穿插外部工具反馈：搜索引擎返回网页摘要，浏览器 Agent 抽取页面内容，代码解释器返回运行结果或报错。问题在于，常见 trajectory-level RL 算法主要比较整条轨迹的最终奖励，很难回答一个更细的问题：<strong>到底是哪一次工具反馈之后的哪几步，决定了后续轨迹质量？</strong>（p.1-p.2, S001-S002）</p>
+<p>论文的核心诊断是：工具反馈会改变模型接下来生成 token 的分布。外部信息进入上下文后，模型既可能获得关键证据，也可能面对互相冲突、噪声很大或格式陌生的信息。若仍然只在完整轨迹层面采样，训练预算会浪费在低价值位置；真正该探索的，是那些工具调用后不确定性突然升高的节点。（p.4, S003）</p>
+
+<figure>
+  <img src="/assets/papers/arpo-2507-19849/fig1_tool_entropy_overview.png" alt="论文 Figure 1：工具调用后的 token entropy 与 ARPO 性能概览">
+  <figcaption><strong>论文图 1。</strong>左侧展示 GAIA 任务中工具调用后的 entropy 峰值；右侧把 deep search 性能和 RL 阶段工具调用预算放在一起看。读图重点：ARPO 不是简单“多用工具”，而是试图把探索集中在工具反馈后更不确定的位置。（p.1, F001; S001）</figcaption>
+</figure>
+
+<h2>2. 关键观察：工具调用后的熵是一个训练信号</h2>
+<p>论文先定义 token entropy：在第 <code>t</code> 步，根据当前上下文得到词表分布 <code>p_t</code>，计算 <code>H_t = -Σ_j p_{t,j} log p_{t,j}</code>。注意，这里的熵不是某个 token 本身“对不对”，而是整个下一 token 分布的不确定程度。（p.3, S003）</p>
+<p>作者比较了搜索型 Agent 与 Python 解释器型 Agent，得出三个观察：</p>
+<ul>
+  <li><strong>Ob.1：</strong>每次工具调用后的前 10-50 个 token，entropy 会快速上升。</li>
+  <li><strong>Ob.2：</strong>推理早期 entropy 也会上升，但通常低于工具反馈后的上升。</li>
+  <li><strong>Ob.3：</strong>搜索反馈比 Python 反馈带来更大 entropy；直觉上，网页文本更开放、更噪，Python 输出更确定。</li>
+</ul>
+<p>这一步很重要，因为它把“什么时候应该多探索”从经验规则变成了可观测量。ARPO 后续所有设计都围绕这个信号展开。（p.4, S003-S004）</p>
+
+<figure>
+  <img src="/assets/papers/arpo-2507-19849/fig2_entropy_analysis.png" alt="论文 Figure 2：不同数据集上的 token entropy 变化和高低熵 token 词云">
+  <figcaption><strong>论文图 2。</strong>HotpotQA / AIME2025 的 entropy 曲线展示了工具调用节点附近的波动；右侧词云显示，高熵 token 常与开放式检索和信息整合相关，低熵 token 更多是格式、代码和数学符号。这里的结论不是“高熵一定好”，而是“高熵值得更细粒度采样”。（p.4, F002; S003）</figcaption>
+</figure>
+
+<h2>3. ARPO 方法总览：全局 rollout + 工具后局部分叉</h2>
+<p>ARPO 的训练流程可以拆成三层：</p>
+<ul>
+  <li><strong>Rollout Module：</strong>策略模型与工具环境交互，得到带工具反馈的推理轨迹。</li>
+  <li><strong>Entropy-based Adaptive Rollout：</strong>一部分预算用于完整轨迹，另一部分预算保留给高熵工具调用后的局部分支。</li>
+  <li><strong>Advantage Attribution Estimation：</strong>因为局部分支共享前缀、后续不同，所以需要分别处理共享 token 与分支 token 的优势归因。</li>
+</ul>
+
+<figure>
+  <img src="/assets/papers/arpo-2507-19849/fig3_arpo_overview.png" alt="论文 Figure 3：ARPO 算法整体框架">
+  <figcaption><strong>论文图 3。</strong>ARPO 在 rollout 阶段同时生成 global samples 与 partial samples，然后分别计算 reward 和 advantage，最后做 group computation 更新策略。它的关键不是换一个 reward model，而是改变“采样预算投向哪里”。（p.5, F003; S005-S007）</figcaption>
+</figure>
+
+<h3>3.1 Entropy-based Adaptive Rollout</h3>
+<p>给定全局 rollout size <code>M</code>，ARPO 不会把 <code>M</code> 全部用于完整轨迹，而是先生成 <code>N</code> 条全局轨迹，把 <code>M-N</code> 留给 partial sampling。具体步骤如下：（p.5, S005-S006）</p>
+<pre><code>1. Rollout initialization
+   - sample N full trajectories
+   - reserve M - N budget for partial branches
+   - compute initial entropy H_initial from first k tokens
+
+2. After each tool call
+   - generate k additional tokens
+   - compute H_t
+   - calculate ΔH_t = Normalize(H_t - H_initial)
+
+3. Adaptive beaming
+   - P_t = α + β · ΔH_t
+   - if P_t > τ: Branch(Z) from this tool-call node
+   - else: continue the current trajectory
+
+4. Termination
+   - stop branching when partial budget is exhausted
+   - if branches terminate early, supplement with full trajectories</code></pre>
+<p>这个设计的直觉很清楚：完整轨迹采样负责保留全局多样性；局部分支采样负责在“刚拿到工具反馈、模型最不确定”的位置展开细查。论文还声称，在忽略 entropy 计算小开销时，ARPO 可把 rollout 复杂度从 trajectory-level RL 的 <code>O(n^2)</code> 降到 <code>O(n log n)</code> 到 <code>O(n^2)</code> 之间。（p.6, S006）</p>
+
+<figure>
+  <img src="/assets/papers/arpo-2507-19849/fig4_adaptive_rollout_advantage.png" alt="论文 Figure 4：基于熵的自适应分叉和优势归因">
+  <figcaption><strong>论文图 4。</strong>左侧展示工具调用后根据 <code>ΔH_t</code> 判断是否分叉；右侧展示分叉轨迹中的共享段与个体段。读图重点：一旦从中间节点分叉，后续 RL 更新就不能再把每条轨迹当作完全独立样本处理。（p.6, F004; S006-S007）</figcaption>
+</figure>
+
+<h3>3.2 Advantage Attribution：共享前缀不能乱背锅</h3>
+<p>局部分支带来一个信用分配问题：多条分支可能共享同一段前缀 token，但最终 reward 不同。若直接把每条分支当作独立轨迹更新，共享前缀会被重复、甚至矛盾地赋值。ARPO 因此讨论两种 advantage attribution：（p.6-p.7, S007）</p>
+<ul>
+  <li><strong>Hard Advantage Estimation：</strong>显式区分 shared tokens 和 individual tokens。分支独有 token 使用各自 reward 归一化优势；共享 token 使用包含该共享段的多条轨迹优势均值。</li>
+  <li><strong>Soft Advantage Estimation：</strong>沿用 GRPO 目标函数，通过 importance sampling ratio 的一致性，让共享前缀在优化中隐式获得对齐的优势信号。</li>
+</ul>
+<p>论文 Figure 5 对比显示，soft setting 在 RL 训练中 reward 更高且更稳定，所以 ARPO 默认采用 soft advantage estimation。（p.7, S007）</p>
+
+<h3>3.3 Reward：正确性、格式与多工具协作</h3>
+<p>奖励函数来自 Tool-Star 风格的层级设计：格式正确且答案正确时给 correctness reward；格式正确但答案错误给 0；格式不对给 -1。额外地，如果模型在正确答案和正确格式下同时使用 <code>&lt;search&gt;</code> 与 <code>&lt;python&gt;</code>，会得到 <code>r_M = 0.1</code> 的多工具协作奖励。（p.7, S008）</p>
+<p>这里有一个工程注意点：多工具 bonus 可以鼓励复杂任务中的协作，但也可能让模型在不必要时“为了拿分而多调用工具”。因此真实系统复现时，最好同时记录工具成本、无效工具率和任务类型，而不是只看最终准确率。</p>
+
+<h2>4. 实验设置：哪些任务证明了它有效？</h2>
+<p>论文评估 13 个 benchmark，覆盖三类场景：（p.8, S009）</p>
+<ul>
+  <li><strong>Mathematical Reasoning：</strong>AIME2024、AIME2025、MATH500、MATH、GSM8K。</li>
+  <li><strong>Knowledge-Intensive Reasoning：</strong>WebWalker、HotpotQA、2WikiMultihopQA、MuSiQue、Bamboogle。</li>
+  <li><strong>Deep Search：</strong>GAIA、WebWalkerQA、Humanity's Last Exam、xbench-DeepSearch。</li>
+</ul>
+<p>训练上，作者先用 LLaMAFactory 做 cold-start SFT：Tool-Star 54K 样本，加 STILL 0.8K 数学数据；RL 阶段深度推理用 Tool-Star 10K，deep search 只用 1K 来自 SimpleDeepSearcher 与 WebSailor 的 hard search 混合样本。搜索结果采用 Bing top-10 snippets，代码解释器在 sandbox 中运行，QA 正确性使用 token-level F1 或 LLM-as-judge。（p.8-p.9, S009）</p>
+
+<h2>5. 主结果：ARPO 是否真的比 GRPO / DAPO 更好？</h2>
+<p>在数学与知识密集推理任务上，表 1 的重点不是某一个单项冠军，而是三种 backbone 的平均结果。Qwen2.5-3B、Llama3.1-8B、Qwen2.5-7B 加 ARPO 后平均分分别为 <strong>52.8、55.3、58.3</strong>，整体高于 GRPO、Reinforce++ 与 DAPO。（p.9, T001）</p>
+
+<figure>
+  <img src="/assets/papers/arpo-2507-19849/table1_reasoning_results.png" alt="论文 Table 1：10 个数学与知识密集推理任务上的结果">
+  <figcaption><strong>论文表 1。</strong>ARPO 在三种 backbone 上平均分最高。值得注意的是，DAPO 在部分单轮数学任务上很强，但在多轮工具/知识密集任务上不一定占优，这支持了论文关于“trajectory-level RL 不擅长步骤级工具行为学习”的论点。（p.9, T001）</figcaption>
+</figure>
+
+<p>Deep search 的表 2 更能体现 Agent 场景。Qwen3-8B + ARPO 在 GAIA、WebWalkerQA、HLE、XBench 上平均为 <strong>38.8 / 30.5 / 8.8 / 25.0</strong>；Qwen3-14B + ARPO 为 <strong>43.7 / 36.0 / 10.0 / 32.0</strong>。作者强调，ARPO 在 RL 阶段只用了 1K hard search 样本，却能在 GAIA / WebWalkerQA 上相对 GRPO 获得约 6% 的提升。（p.10, T002）</p>
+
+<figure>
+  <img src="/assets/papers/arpo-2507-19849/table2_deep_search_results.png" alt="论文 Table 2：deep search 任务主结果">
+  <figcaption><strong>论文表 2。</strong>在 deep search 中，ARPO 相比 GRPO 的优势更明显。我的理解是：搜索任务存在大量“读完一个网页后接下来怎么走”的局部决策，正好匹配 ARPO 的 post-tool branching 假设。（p.10, T002）</figcaption>
+</figure>
+
+<h2>6. 进一步分析：Pass@K、工具成本与浏览器能力</h2>
+<h3>6.1 Pass@K：分叉提升了采样空间</h3>
+<p>由于 deep search 是动态多轮任务，Pass@1 不能完全反映模型的工具使用潜力。论文继续看 Pass@3 / Pass@5，发现 Qwen3-14B + ARPO 在 Pass@5 下达到 GAIA <strong>61.2%</strong>、HLE <strong>24.0%</strong>、xbench-DR <strong>59.0%</strong>。这说明 ARPO 不只是提高单次答案，还增加了高质量工具路径的采样多样性。（p.11, S010）</p>
+
+<figure>
+  <img src="/assets/papers/arpo-2507-19849/fig6_passk_scaling.png" alt="论文 Figure 6：Qwen3-8B 和 Qwen3-14B 在 Pass@1 到 Pass@5 的分析">
+  <figcaption><strong>论文图 6。</strong>Pass@K 随 K 增大明显上升，尤其 14B 模型在 GAIA、HLE、xbench-DS 上的 Pass@5 结果突出。对 Agent 系统而言，这意味着 rerank / verifier / 多样本搜索仍然有发挥空间。（p.11, F006; S010）</figcaption>
+</figure>
+
+<h3>6.2 工具调用效率：更强不一定更贵</h3>
+<p>工具调用是 Agent RL 的真实成本中心：搜索 API、浏览器解析、代码沙箱都会花钱花时间。论文在 Qwen2.5-7B 上比较 ARPO 与 GRPO，发现 ARPO 总体准确率更高，同时工具调用数约为 GRPO 的一半。作者把原因归结为：ARPO 只在高熵工具调用步骤展开探索，而不是全轨迹反复采样。（p.11, S011）</p>
+
+<figure>
+  <img src="/assets/papers/arpo-2507-19849/fig7_tool_call_efficiency.png" alt="论文 Figure 7：Qwen2.5-7B 上 GRPO 与 ARPO 的工具调用效率对比">
+  <figcaption><strong>论文图 7。</strong>蓝线 ARPO 的工具调用数显著低于红线 GRPO。这里是 ARPO 最有工程吸引力的证据：如果工具预算是瓶颈，步骤级采样比整轨迹采样更可能省钱。（p.11, F007; S011）</figcaption>
+</figure>
+
+<h3>6.3 浏览器消融：外部工具本身也很关键</h3>
+<p>论文还做了 browser agent 消融：只用 snippet 最弱，同规模浏览器更好，更大的 QWQ-32B browser 通常进一步提升。例如 Qwen3-14B + QWQ-32B Browser 在 GAIA/HLE/WebWalker/Avg 上为 <strong>47.6 / 32.3 / 38.4 / 39.4</strong>。这提醒我们，ARPO 优化的是 agentic policy，但系统上限仍强依赖外部工具质量。（p.11, T003）</p>
+
+<figure>
+  <img src="/assets/papers/arpo-2507-19849/table3_browser_ablation.png" alt="论文 Table 3：deep search 中 browser agent 的消融实验">
+  <figcaption><strong>论文表 3。</strong>浏览器越强，deep search 整体越好，尤其 HLE 这类需要细节抽取与信息整合的任务。这也意味着复现 ARPO 时必须报告 browser/search 配置，否则结果很难横向比较。（p.11, T003）</figcaption>
+</figure>
+
+<h2>7. 超参：熵权重、初始采样数、全局 rollout size 怎么选？</h2>
+<p>论文用 Qwen2.5-7B 分析三个超参：（p.12, S012）</p>
+<ul>
+  <li><strong>Entropy Weight：</strong>验证分数随熵权重上升先提高，在 <strong>0.4</strong> 附近达到峰值；到 1.0 时下降，说明过度依赖熵会伤害采样多样性。</li>
+  <li><strong>Initial Sampling Size N：</strong>从 1 增到 8 时性能提升，<strong>N=8</strong> 最优；当全局 rollout size 为 16 时，N=8 对应全局:局部约 1:1。N=16 退化成完全全局采样，性能反而下降。</li>
+  <li><strong>Global Rollout Size M：</strong>M 越大整体越好，说明 ARPO 在更大采样预算下仍可扩展。</li>
+</ul>
+
+<figure>
+  <img src="/assets/papers/arpo-2507-19849/fig8_hyperparameter_scaling.png" alt="论文 Figure 8：熵权重、初始采样数和全局 rollout size 的超参分析">
+  <figcaption><strong>论文图 8。</strong>最值得记的经验值是：熵权重不要拉满，初始全局采样和后续局部分支要保持平衡。ARPO 的收益来自“全局覆盖 + 局部深挖”，不是只做其中一个。（p.12, F008; S012）</figcaption>
+</figure>
+
+<h2>8. 我对 ARPO 的理解：它更像一种 Agent 训练资源调度器</h2>
+<p>如果把 GRPO / DAPO 看成“如何根据一组完整回答更新策略”，ARPO 更像是在问另一个问题：<strong>同样的采样预算，应该花在哪些时间点？</strong> 它把 rollout 预算拆成两类：</p>
+<ul>
+  <li><strong>global budget：</strong>用于覆盖不同完整解题路线，避免过早锁死在一个思路。</li>
+  <li><strong>partial budget：</strong>用于在工具反馈后的不确定位置展开多条局部后续路径。</li>
+</ul>
+<p>这个视角很适合 Agent，因为工具反馈天然形成了“决策边界”：搜索结果返回了，下一步是继续搜、打开页面、写代码验证、还是总结答案？这些节点比普通 token 位置更值得探索。ARPO 的贡献就是把这种边界用 entropy 检测出来，并把 RL 更新中的 shared prefix / branch path 处理清楚。</p>
+
+<blockquote class="pull-quote">
+  <p>ARPO 最值得带走的思想不是某个公式，而是：Agent RL 的探索单位不必总是完整轨迹；工具调用后的局部状态，可能才是最该分配训练预算的地方。</p>
+</blockquote>
+
+<h2>9. 局限与我会继续追问的问题</h2>
+<div class="insight-grid">
+  <article class="insight-card">
+    <span>Q1</span>
+    <h3>高熵一定代表值得探索吗？</h3>
+    <p>不一定。高熵也可能来自网页噪声、搜索结果不相关、上下文格式混乱或模型能力不足。实际系统中应把 entropy 与工具结果质量、检索置信度、历史成功率结合。</p>
+  </article>
+  <article class="insight-card">
+    <span>Q2</span>
+    <h3>外部工具配置影响多大？</h3>
+    <p>Table 3 已经说明 browser agent 强弱会显著影响 deep search。若换搜索引擎、网页解析器、代码沙箱或 judge，ARPO 的绝对收益可能变化。</p>
+  </article>
+  <article class="insight-card">
+    <span>Q3</span>
+    <h3>多工具 bonus 会不会诱导滥用工具？</h3>
+    <p>奖励里对同时使用 search 与 python 给 0.1 bonus，可能在复杂任务上有益，但也可能鼓励不必要调用。复现时应统计无效工具调用与平均成本。</p>
+  </article>
+  <article class="insight-card">
+    <span>Q4</span>
+    <h3>partial rollout 的实现复杂度如何？</h3>
+    <p>从中间节点分叉意味着需要保存工具状态、上下文前缀、采样树和 advantage 映射。训练框架若原本只支持完整 responses，需要改造数据结构。</p>
+  </article>
+</div>
+
+<h2>10. 工程启发：如果我要把它放进 Agent 框架</h2>
+<p>我会先实现一个观测与离线分析版本，而不是直接改 RL：</p>
+<pre><code>1. 在每次 tool_call 后记录：
+   - tool type: search / browser / python / other
+   - returned content length and confidence
+   - next k token entropy H_t
+   - final outcome reward
+
+2. 构建 post-tool decision dataset：
+   - shared prefix
+   - branch candidates
+   - branch-level reward / cost
+   - whether branch changed final answer
+
+3. 先做离线策略：
+   - only branch when ΔH_t is high and tool output is credible
+   - cap branch count per question
+   - log cost-normalized reward
+
+4. 再进入 RL：
+   - global samples preserve diversity
+   - partial samples target high-uncertainty tool nodes
+   - shared prefix and branch tokens use separated advantage accounting</code></pre>
+<p>这样可以先验证一个核心假设：在你的任务、工具和模型上，post-tool entropy 是否真的能预测“值得分叉探索”的节点。如果相关性弱，直接套 ARPO 可能只会增加系统复杂度。</p>
+
+<h2>参考与出处</h2>
+<ul>
+  <li>Dong et al., <em>Agentic Reinforced Policy Optimization</em>, arXiv:2507.19849, 2025-07-26.</li>
+  <li>论文 PDF：<a href="https://arxiv.org/pdf/2507.19849">https://arxiv.org/pdf/2507.19849</a>；代码：<a href="https://github.com/dongguanting/ARPO">https://github.com/dongguanting/ARPO</a>。</li>
+  <li>本文图表均为论文原图裁剪；source map 存放于 <code>/assets/papers/arpo-2507-19849/source_map.json</code>。</li>
+  <li>文中的 Sxxx / Fxxx / Txxx 指向本地 source map 中的段落、图和表。</li>
+</ul>

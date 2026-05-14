@@ -74,6 +74,7 @@ main {
   justify-content: space-between;
   gap: 24px;
   padding: 30px 0 18px;
+  min-height: 82px;
 }
 
 .brand {
@@ -762,196 +763,183 @@ h4 {
   .prose .insight-grid { grid-template-columns: 1fr; }
 }
 
-/* Wide layout for HTML posts */
-.article-wide {
-  width: min(var(--site-width), 100%);
+/* HTML article layout: one consistent, wider reading measure */
+.article-html {
+  --html-article-width: 980px;
+  --html-text-width: 820px;
+  --html-media-width: 860px;
+  --html-code-width: 860px;
+  --html-card-width: 860px;
+  width: min(var(--html-article-width), 100%);
 }
 
-.article-wide .article-header {
-  width: min(var(--content-width), 100%);
-  margin-inline: auto;
-}
-
-.article-wide .prose {
+.article-html .article-header,
+.article-html .prose {
   width: 100%;
+  max-width: 100%;
 }
 
-.article-wide .prose > p,
-.article-wide .prose > ul,
-.article-wide .prose > ol,
-.article-wide .prose > h2,
-.article-wide .prose > h3,
-.article-wide .prose > h4,
-.article-wide .prose > blockquote:not(.pull-quote),
-.article-wide .prose > pre {
-  width: min(var(--content-width), 100%);
-  margin-left: auto;
-  margin-right: auto;
+.article-html .article-header {
+  padding-bottom: 34px;
 }
 
-.article-wide .prose > figure,
-.article-wide .prose > .table-wrap,
-.article-wide .prose > .note-hero,
-.article-wide .prose > .insight-grid,
-.article-wide .prose > .callout-panel,
-.article-wide .prose > .pull-quote,
-.article-wide .prose > .wide,
-.article-wide .prose > .full-bleed {
-  width: 100%;
+.article-html .article-header h1 {
+  max-width: 920px;
+  font-size: clamp(2.35rem, 4.2vw, 3.85rem);
+}
+
+.article-html .article-header p {
+  max-width: var(--html-text-width);
+}
+
+.article-html .prose {
+  font-size: 1.055rem;
+  line-height: 1.88;
+}
+
+.article-html .prose > p,
+.article-html .prose > ul,
+.article-html .prose > ol,
+.article-html .prose > h2,
+.article-html .prose > h3,
+.article-html .prose > h4,
+.article-html .prose > blockquote:not(.pull-quote),
+.article-html .prose > .pull-quote {
+  width: min(var(--html-text-width), 100%);
   max-width: 100%;
   margin-left: auto;
   margin-right: auto;
 }
 
-
-.article-wide .prose > table {
-  width: 100%;
-  max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.article-wide .prose > figure img,
-.article-wide .prose > figure video,
-.article-wide .prose > figure canvas,
-.article-wide .prose > figure svg,
-.article-wide .prose > figure iframe {
-  width: 100%;
-  max-width: 100%;
-}
-
-.article-wide .prose > .insight-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.article-wide .prose > .callout-panel,
-.article-wide .prose > .note-hero {
-  padding: 30px;
-}
-
-@media (max-width: 1100px) {
-  .article-wide .prose > .insight-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 680px) {
-  .article-wide {
-    width: 100%;
-  }
-
-  .article-wide .article-header,
-  .article-wide .prose > p,
-  .article-wide .prose > ul,
-  .article-wide .prose > ol,
-  .article-wide .prose > h2,
-  .article-wide .prose > h3,
-  .article-wide .prose > h4,
-  .article-wide .prose > blockquote:not(.pull-quote),
-  .article-wide .prose > pre {
-    width: 100%;
-  }
-
-  .article-wide .prose > .insight-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .article-wide .prose > .callout-panel,
-  .article-wide .prose > .note-hero {
-    padding: 22px;
-  }
-}
-
-
-/* Normalized HTML post layout: keep one consistent reading measure */
-.article-wide {
-  width: min(900px, 100%);
-}
-
-.article-wide .article-header,
-.article-wide .prose,
-.article-wide .prose > p,
-.article-wide .prose > ul,
-.article-wide .prose > ol,
-.article-wide .prose > h2,
-.article-wide .prose > h3,
-.article-wide .prose > h4,
-.article-wide .prose > blockquote,
-.article-wide .prose > pre,
-.article-wide .prose > figure,
-.article-wide .prose > table,
-.article-wide .prose > .note-hero,
-.article-wide .prose > .insight-grid,
-.article-wide .prose > .callout-panel,
-.article-wide .prose > .pull-quote,
-.article-wide .prose > .wide,
-.article-wide .prose > .full-bleed {
+.article-html .prose > table,
+.article-html .prose > .table-wrap,
+.article-html .prose > .note-hero,
+.article-html .prose > .callout-panel,
+.article-html .prose > .wide,
+.article-html .prose > .full-bleed {
   width: 100%;
   max-width: 100%;
   margin-left: 0;
   margin-right: 0;
 }
 
-.article-wide .article-header h1 {
+.article-html .prose > .note-hero,
+.article-html .prose > .callout-panel {
+  padding: 28px 30px;
+}
+
+.article-html .prose > pre {
+  width: min(var(--html-code-width), 100%);
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.article-html .prose > .insight-grid {
+  width: min(var(--html-card-width), 100%);
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.article-html .prose > .note-hero > *,
+.article-html .prose > .callout-panel > * {
+  max-width: var(--html-text-width);
+}
+
+.article-html .prose > .note-hero h2 {
   max-width: 900px;
-  font-size: clamp(2.25rem, 4.3vw, 3.7rem);
 }
 
-.article-wide .prose > .insight-grid {
+.article-html .prose > .insight-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
-.article-wide .prose > figure {
-  padding: 14px;
+.article-html .prose .insight-card {
+  padding: 22px;
+}
+
+.article-html .prose > figure {
+  width: min(var(--html-media-width), 100%);
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: hidden;
+  padding: 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.78);
   box-shadow: var(--shadow-sm);
 }
 
-.article-wide .prose > figure img,
-.article-wide .prose > figure video,
-.article-wide .prose > figure canvas,
-.article-wide .prose > figure svg,
-.article-wide .prose > figure iframe {
+.article-html .prose > figure img,
+.article-html .prose > figure video,
+.article-html .prose > figure canvas,
+.article-html .prose > figure svg,
+.article-html .prose > figure iframe {
+  display: block;
   width: auto;
   max-width: 100%;
-  max-height: 62vh;
-  object-fit: contain;
+  height: auto;
+  max-height: none;
+  margin-inline: auto;
   border: 0;
-}
-
-.article-wide .prose > figure img {
+  border-radius: calc(var(--radius-md) - 8px);
   background: transparent;
+  object-fit: contain;
 }
 
-.article-wide .prose > .note-hero,
-.article-wide .prose > .callout-panel {
-  padding: 26px;
+.article-html .prose > figure iframe {
+  width: 100%;
+}
+
+.article-html .prose > figure figcaption {
+  max-width: 760px;
+  margin: 0.8rem auto 0;
+}
+
+@media (min-width: 1280px) {
+  .article-html {
+    --html-article-width: 1020px;
+    --html-text-width: 840px;
+    --html-media-width: 880px;
+    --html-code-width: 880px;
+    --html-card-width: 880px;
+  }
 }
 
 @media (max-width: 1100px) {
-  .article-wide {
-    width: min(820px, 100%);
+  .article-html {
+    --html-article-width: 900px;
+    --html-text-width: 760px;
+    --html-media-width: 100%;
+    --html-code-width: 100%;
+    --html-card-width: 100%;
   }
 }
 
 @media (max-width: 680px) {
-  .article-wide {
+  .article-html {
     width: 100%;
   }
 
-  .article-wide .prose > .insight-grid {
+  .article-html .prose {
+    font-size: 1rem;
+    line-height: 1.82;
+  }
+
+  .article-html .prose > .note-hero,
+  .article-html .prose > .callout-panel {
+    padding: 20px;
+  }
+
+  .article-html .prose > .insight-grid {
     grid-template-columns: 1fr;
   }
 
-  .article-wide .prose > figure {
+  .article-html .prose > figure {
     padding: 10px;
     border-radius: 12px;
-  }
-
-  .article-wide .prose > .note-hero,
-  .article-wide .prose > .callout-panel {
-    padding: 20px;
   }
 }

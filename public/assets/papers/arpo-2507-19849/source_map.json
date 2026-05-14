@@ -1,0 +1,130 @@
+[
+  {
+    "id": "S001",
+    "type": "abstract",
+    "page": 1,
+    "section": "Abstract",
+    "summary_zh": "ARPO 面向多轮工具型 LLM Agent 的 RLVR 训练，指出现有 trajectory-level RL 难以同时覆盖长程推理与工具反馈后的局部探索；核心做法是在工具调用后用 token entropy 触发自适应分叉 rollout，并用 advantage attribution 处理共享前缀与分支路径。",
+    "evidence": "entropy distribution of generated tokens immediately following interactions with external tools; entropy-based adaptive rollout; advantage attribution estimation; 13 challenging benchmarks; only half of the tool-use budget."
+  },
+  {
+    "id": "S002",
+    "type": "motivation",
+    "page": 2,
+    "section": "Introduction",
+    "summary_zh": "论文认为，真实推理场景中的 Agent 会频繁调用搜索、浏览器、代码解释器等外部工具；只在完整轨迹层面对答案做 RL 更新，会忽略工具反馈引入的不确定性和步骤级行为选择。",
+    "evidence": "trajectory-level RL methods focus on full trajectories while overlooking step-level tool-use behavior learning."
+  },
+  {
+    "id": "S003",
+    "type": "observation",
+    "page": 4,
+    "section": "2.2 Analyzing Token Entropy in Agentic Reasoning",
+    "summary_zh": "先导实验发现：工具调用后的前 10-50 个 token 熵明显上升；早期推理阶段熵也会上升但低于工具反馈后；搜索反馈比 Python 输出带来更大的不确定性。",
+    "evidence": "Entropy rises sharply in the first 10-50 tokens following each tool call; Search feedback introduces more uncertainty than Python feedback."
+  },
+  {
+    "id": "S004",
+    "type": "tool-design",
+    "page": 4,
+    "section": "2.3 Agentic Tool Design",
+    "summary_zh": "ARPO 主要评估三类工具：Search Engine、Web Browser Agent、Code Interpreter，用来覆盖知识密集、多跳搜索与计算推理。",
+    "evidence": "Search Engine; Web Browser Agent; Code Interpreter."
+  },
+  {
+    "id": "S005",
+    "type": "method",
+    "page": 5,
+    "section": "3.1 Entropy-based Adaptive Rollout",
+    "summary_zh": "自适应 rollout 先生成 N 条全局轨迹，保留 M-N 个预算给局部分叉；记录初始 k token 熵 H_initial，并在每次工具调用后计算 H_t 与归一化差值 ΔH_t。",
+    "evidence": "Given a global rollout size M, generate N trajectories; remaining M-N reserved for partial sampling; compute H_initial; ΔH_t = Normalize(H_t - H_initial)."
+  },
+  {
+    "id": "S006",
+    "type": "method",
+    "page": 5,
+    "section": "3.1 Entropy-based Adaptive Rollout",
+    "summary_zh": "ARPO 用 P_t = α + β·ΔH_t 判断是否在当前工具调用节点执行 Branch(Z)，否则继续原轨迹；目标是把探索预算投到高不确定性的工具反馈位置。",
+    "evidence": "P_t = α + β·ΔH_t; Branch(Z) if P_t > τ, otherwise Continue."
+  },
+  {
+    "id": "S007",
+    "type": "method",
+    "page": 6,
+    "section": "3.2 Advantage Attribution Estimation",
+    "summary_zh": "部分 rollout 会产生共享 token 前缀与不同分支路径，因此论文提出 advantage attribution：hard setting 显式给共享段平均优势、给分支段单独优势；soft setting 借 GRPO 的 importance ratio 在优化中隐式完成对齐。",
+    "evidence": "shared reasoning token segments and distinct beam paths; Hard Advantage Estimation; Soft Advantage Estimation."
+  },
+  {
+    "id": "S008",
+    "type": "method",
+    "page": 7,
+    "section": "Hierarchical Reward Design",
+    "summary_zh": "奖励函数结合格式、正确性与多工具协作；当答案正确且格式正确，并同时使用 search 和 python 时，额外给 r_M=0.1。",
+    "evidence": "R = max(Acc. + r_M, Acc.) if Format is Good and Acc. > 0; r_M=0.1 if <search> and <python>."
+  },
+  {
+    "id": "S009",
+    "type": "experiment",
+    "page": 8,
+    "section": "4 Experimental Setup",
+    "summary_zh": "训练分为冷启动 SFT 与 RL 两阶段：SFT 用 Tool-Star 54K 样本并加入 STILL 0.8K 数学数据；RL 中深度推理用 Tool-Star 10K，深度搜索仅用 1K 混合 hard search 样本。",
+    "evidence": "Tool-Star's open-source dataset of 54K; STILL dataset 0.8K; 10K open-source RL training samples; only 1K mixed hard search samples."
+  },
+  {
+    "id": "T001",
+    "type": "table",
+    "page": 9,
+    "section": "Table 1",
+    "summary_zh": "10 个数学/知识密集推理任务上，ARPO 在三种 backbone 平均分分别为 52.8、55.3、58.3，整体高于 GRPO、Reinforce++、DAPO。",
+    "asset": "/assets/papers/arpo-2507-19849/table1_reasoning_results.png"
+  },
+  {
+    "id": "T002",
+    "type": "table",
+    "page": 10,
+    "section": "Table 2",
+    "summary_zh": "深度搜索任务上，Qwen3-8B + ARPO 在 GAIA/WebWalkerQA/HLE/XBench 平均为 38.8/30.5/8.8/25.0；Qwen3-14B + ARPO 为 43.7/36.0/10.0/32.0。",
+    "asset": "/assets/papers/arpo-2507-19849/table2_deep_search_results.png"
+  },
+  {
+    "id": "S010",
+    "type": "analysis",
+    "page": 11,
+    "section": "4.6 Quantitative Analysis",
+    "summary_zh": "Pass@K 分析显示 Qwen3-14B + ARPO 在 Pass@5 下 GAIA 61.2%、HLE 24.0%、xbench-DR 59.0%，说明高熵分支带来了采样多样性。",
+    "evidence": "GAIA at 61.2%, HLE at 24.0% and xbench-DR at 59%."
+  },
+  {
+    "id": "S011",
+    "type": "analysis",
+    "page": 11,
+    "section": "Tool-Call Efficiency Analysis",
+    "summary_zh": "工具调用效率曲线显示 ARPO 在 Qwen2.5-7B 上比 GRPO 总体准确率更高，同时只用约一半工具调用数。",
+    "evidence": "ARPO achieves superior overall accuracy compared to GRPO while using only half the number of tool calls."
+  },
+  {
+    "id": "T003",
+    "type": "table",
+    "page": 11,
+    "section": "Table 3",
+    "summary_zh": "浏览器能力消融显示，只有 snippet 时效果最弱；换成同规模浏览器或 QWQ-32B 浏览器后 deep search 表现上升，Qwen3-14B + QWQ-32B Browser 平均达到 39.4。",
+    "asset": "/assets/papers/arpo-2507-19849/table3_browser_ablation.png"
+  },
+  {
+    "id": "S012",
+    "type": "analysis",
+    "page": 12,
+    "section": "4.7 Scaling Analysis of ARPO",
+    "summary_zh": "超参分析显示熵权重在 0.4 左右最优；初始采样数 N 在 8 左右最优；全局 rollout size 增大时性能整体提升。",
+    "evidence": "Entropy Value peaks at 0.4; Initial Sampling Size peaks at 8; increasing Global Rollout Size enhances performance."
+  },
+  {
+    "id": "S013",
+    "type": "conclusion",
+    "page": 13,
+    "section": "Conclusion",
+    "summary_zh": "论文总结 ARPO 能在多轮工具环境中进行步骤级探索与优势归因，在 13 个 benchmark 上优于 trajectory-level RL，并降低工具使用预算。",
+    "evidence": "agentic RL algorithm; 13 challenging benchmarks; reduced tool-use budget."
+  }
+]

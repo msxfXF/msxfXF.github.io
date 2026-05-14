@@ -264,7 +264,7 @@ function renderPosts(posts) {
 
 function renderPost(post) {
   const isHtmlPost = post.format === 'html';
-  const articleClass = isHtmlPost ? 'article article-wide article-html' : 'article';
+  const articleClass = isHtmlPost ? 'article article-html' : 'article';
   const proseClass = isHtmlPost ? 'prose prose-html' : 'prose';
 
   return pageShell({
