@@ -6,7 +6,9 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs --watch",
-    "serve": "node scripts/serve.mjs"
+    "serve": "node scripts/serve.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "publish": "node scripts/deploy.mjs"
   },
   "engines": {
     "node": ">=20"
