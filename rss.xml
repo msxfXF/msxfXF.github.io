@@ -5,6 +5,20 @@
   <link>https://msxfXF.github.io</link>
   <description>分享、阅读、文章解读与思考札记。</description>
   <item>
+    <title>AEPO 论文精读：Web Agent RL 里的熵不是越高越好</title>
+    <link>https://msxfXF.github.io/posts/aepo-paper-reading/</link>
+    <guid>https://msxfXF.github.io/posts/aepo-paper-reading/</guid>
+    <pubDate>Thu, 14 May 2026 00:00:00 GMT</pubDate>
+    <description>解读 AEPO 如何在 rollout 和 policy update 两阶段平衡高熵探索，缓解 Web Agent 强化学习中的分支坍缩和梯度裁剪问题。</description>
+  </item>
+<item>
+    <title>ARPO 论文精读：为什么 Agent RL 要在工具调用后分叉探索</title>
+    <link>https://msxfXF.github.io/posts/arpo-agentic-rl-reading/</link>
+    <guid>https://msxfXF.github.io/posts/arpo-agentic-rl-reading/</guid>
+    <pubDate>Thu, 14 May 2026 00:00:00 GMT</pubDate>
+    <description>解读 ARPO 如何用工具调用后的高熵信号做自适应 rollout，并用 advantage attribution 训练多轮工具型 Agent。</description>
+  </item>
+<item>
     <title>HTML 文章示例：做一篇更有表现力的解读</title>
     <link>https://msxfXF.github.io/posts/html-playground/</link>
     <guid>https://msxfXF.github.io/posts/html-playground/</guid>

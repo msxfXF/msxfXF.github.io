@@ -1,0 +1,182 @@
+{
+  "paper": {
+    "title": "Agentic Entropy-Balanced Policy Optimization",
+    "arxiv": "2510.14545v1",
+    "url": "https://arxiv.org/abs/2510.14545",
+    "pdf": "https://arxiv.org/pdf/2510.14545",
+    "authors": "Guanting Dong, Licheng Bao, Zhongyuan Wang, Kangzhi Zhao, Xiaoxi Li, Jiajie Jin, Jinghan Yang, Hangyu Mao, Fuzheng Zhang, Kun Gai, Guorui Zhou, Yutao Zhu, Ji-Rong Wen, Zhicheng Dou",
+    "venue": "WWW 2026 (as shown in paper PDF)",
+    "code": "https://github.com/dongguanting/ARPO"
+  },
+  "entries": [
+    {
+      "id": "S001",
+      "section": "Abstract",
+      "page": "p.1",
+      "snippet": "AEPO comprises dynamic entropy-balanced rollout and Entropy-Balanced Policy Optimization; 14 datasets; Qwen3-14B 47.6 GAIA, 11.2 HLE, 43.0 WebWalkerQA Pass@1; 65.0 GAIA, 26.0 HLE, 70.0 WebWalkerQA Pass@5.",
+      "confidence": "high"
+    },
+    {
+      "id": "S002",
+      "section": "Introduction",
+      "page": "p.1-p.2",
+      "snippet": "SFT struggles to discover autonomous tool-use; trajectory-level RL overlooks multi-turn tool interactions; entropy-driven branching introduces training challenges.",
+      "confidence": "high"
+    },
+    {
+      "id": "S003",
+      "section": "Problem-1",
+      "page": "p.3",
+      "snippet": "Consecutive high-entropy tool-call turns: 56.5% consecutive vs 43.5% isolated; up to 6 consecutive; 93.4% branches concentrated on 1-3 trajectories.",
+      "confidence": "high"
+    },
+    {
+      "id": "S004",
+      "section": "Problem-2",
+      "page": "p.3",
+      "snippet": "High-entropy tokens include logical transitions and tool-call tokens; vanilla RL clips high-entropy token gradients, causing lack of gradient support early in training.",
+      "confidence": "high"
+    },
+    {
+      "id": "S005",
+      "section": "Tool Design",
+      "page": "p.4",
+      "snippet": "Tools: web search engine, web browser, code executor.",
+      "confidence": "high"
+    },
+    {
+      "id": "S006",
+      "section": "Method Overview",
+      "page": "p.4",
+      "snippet": "AEPO has dynamic entropy-balanced rollout and entropy-balanced policy optimization.",
+      "confidence": "high"
+    },
+    {
+      "id": "S007",
+      "section": "Entropy Pre-Monitoring",
+      "page": "p.4",
+      "snippet": "Allocate global vs branch rollout budget based on H_root - H_tool_avg through a sigmoid-controlled rule.",
+      "confidence": "high"
+    },
+    {
+      "id": "S008",
+      "section": "Adaptive Rollout",
+      "page": "p.5",
+      "snippet": "Monitor entropy variation after tool calls; penalize consecutive high-entropy branching with probability decreasing as consecutive branch count grows.",
+      "confidence": "high"
+    },
+    {
+      "id": "S009",
+      "section": "Policy Update",
+      "page": "p.5",
+      "snippet": "Insert stop-gradient into high-entropy clipping term to retain/rescale gradients for high-entropy tokens; add entropy-aware advantage estimation.",
+      "confidence": "high"
+    },
+    {
+      "id": "S010",
+      "section": "Implementation",
+      "page": "p.6",
+      "snippet": "VERL; batch size 128; PPO mini-batch 16; context length 20K; global rollout 16; beta=0.2; P(l)=0.2*l; 16 H800 GPUs; Bing Search API.",
+      "confidence": "high"
+    },
+    {
+      "id": "T001",
+      "section": "Table 1",
+      "page": "p.7",
+      "snippet": "Deep information seeking: Qwen3-14B + AEPO reaches WebWalkerQA avg 43.0, HLE 11.2, GAIA 47.6; Qwen3-8B + AEPO improves over ARPO.",
+      "confidence": "high"
+    },
+    {
+      "id": "T002",
+      "section": "Table 2",
+      "page": "p.8",
+      "snippet": "Across 10 reasoning tasks: AEPO avg 56.3 on Llama3.1-8B and 60.3 on Qwen2.5-7B, highest among compared RL algorithms.",
+      "confidence": "high"
+    },
+    {
+      "id": "S011",
+      "section": "Pass@K",
+      "page": "p.9",
+      "snippet": "Qwen3-14B + AEPO Pass@5: GAIA 65%, HLE 26%, XBench-DR 65%; stable gains over ARPO.",
+      "confidence": "high"
+    },
+    {
+      "id": "S012",
+      "section": "Rollout Diversity",
+      "page": "p.9",
+      "snippet": "AEPO forms more cluster centers than ARPO, 62 vs 54, and covers more branch paths.",
+      "confidence": "high"
+    },
+    {
+      "id": "S013",
+      "section": "Efficiency/Stability",
+      "page": "p.9-p.10",
+      "snippet": "AEPO uses about half the tool calls of vanilla/clipping-optimized RL algorithms while maintaining stable entropy curves and better accuracy.",
+      "confidence": "high"
+    },
+    {
+      "id": "F001",
+      "section": "Figure 1",
+      "page": "p.1",
+      "file": "fig1_overview.png",
+      "caption": "Performance overview of AEPO algorithm.",
+      "confidence": "high"
+    },
+    {
+      "id": "F002",
+      "section": "Figure 2",
+      "page": "p.2",
+      "file": "fig2_entropy_challenges.png",
+      "caption": "Two high-entropy challenges: rollout collapse and token gradient clipping.",
+      "confidence": "high"
+    },
+    {
+      "id": "F003",
+      "section": "Figure 3",
+      "page": "p.3",
+      "file": "fig3_entropy_statistics.png",
+      "caption": "Quantitative statistics of the two entropy-based challenges.",
+      "confidence": "high"
+    },
+    {
+      "id": "F004",
+      "section": "Figure 4",
+      "page": "p.4",
+      "file": "fig4_aepo_overview.png",
+      "caption": "AEPO overview: entropy-balanced rollout and policy update.",
+      "confidence": "high"
+    },
+    {
+      "id": "F005",
+      "section": "Figure 5",
+      "page": "p.8",
+      "file": "fig5_pass_at_k.png",
+      "caption": "Pass@1 to Pass@5 comparison between ARPO and AEPO.",
+      "confidence": "high"
+    },
+    {
+      "id": "F006",
+      "section": "Figure 6",
+      "page": "p.9",
+      "file": "fig6_rollout_diversity.png",
+      "caption": "t-SNE/PCA-style rollout diversity visualization.",
+      "confidence": "high"
+    },
+    {
+      "id": "F007",
+      "section": "Figure 7",
+      "page": "p.9",
+      "file": "fig7_branch_tool_efficiency.png",
+      "caption": "Branch sampling distribution and tool-call efficiency.",
+      "confidence": "high"
+    },
+    {
+      "id": "F008",
+      "section": "Figure 8",
+      "page": "p.10",
+      "file": "fig8_training_dynamics.png",
+      "caption": "Training dynamics: entropy loss and accuracy.",
+      "confidence": "high"
+    }
+  ]
+}
