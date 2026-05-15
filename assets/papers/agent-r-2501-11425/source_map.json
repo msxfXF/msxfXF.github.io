@@ -1,0 +1,146 @@
+[
+  {
+    "id": "S001",
+    "type": "abstract",
+    "page": 1,
+    "section": "Abstract",
+    "summary_zh": "Agent-R 是一个 iterative self-training 框架，让语言模型 Agent 在交互环境中 on-the-fly reflection；核心是用 MCTS 构造能从错误轨迹恢复到正确轨迹的 revision trajectories，并通过多轮 SFT 提升自纠错能力。",
+    "evidence": "iterative self-training framework; Monte Carlo Tree Search; construct training samples that recover correct trajectories from erroneous ones; continuously improves ability to recover from errors."
+  },
+  {
+    "id": "S002",
+    "type": "motivation",
+    "page": 2,
+    "section": "Introduction",
+    "summary_zh": "论文指出行为克隆 expert trajectories 的方法只学习全对路径，缺少错误后恢复能力；真实交互任务又通常直到终止状态才给 reward，难以收集中间 step-level critique。",
+    "evidence": "behavior cloning from stronger experts; all-correct trajectories; struggles to proactively self-correct errors; no explicit error signals until terminal state."
+  },
+  {
+    "id": "F001",
+    "type": "figure",
+    "page": 3,
+    "section": "Figure 1",
+    "summary_zh": "图 1 展示两类错误：长轨迹中早期走错后难以恢复，以及重复开门等局部循环；Agent-R 目标是及时发现并修正这些错误。",
+    "asset": "/assets/papers/agent-r-2501-11425/fig1_error_correction_motivation.png"
+  },
+  {
+    "id": "S003",
+    "type": "preliminary",
+    "page": 3,
+    "section": "2.1 Task Formulation",
+    "summary_zh": "任务被形式化为 POMDP；Agent 基于历史 action-observation 轨迹与用户指令生成下一步 action，终止时由环境给最终 reward。",
+    "evidence": "Partially Observable Markov Decision Process; historical trajectory; final reward at terminal time step."
+  },
+  {
+    "id": "S004",
+    "type": "method",
+    "page": 4,
+    "section": "3 Method",
+    "summary_zh": "Agent-R 分为两阶段：Phase I 用 MCTS 与模型引导的 reflection 构造 revision trajectories；Phase II 用这些 revision trajectories 进行 iterative supervised fine-tuning。",
+    "evidence": "Phase I: Model-Guided Reflection Trajectory Generation; Phase II: Iterative Self-Training with Revision Trajectories."
+  },
+  {
+    "id": "F002",
+    "type": "figure",
+    "page": 5,
+    "section": "Figure 2",
+    "summary_zh": "图 2 是 Agent-R 框架总览：MCTS 搜索 bad/good 轨迹，actor model 找 transition point，拼接 revision signal 与后续 good path，然后迭代 SFT。",
+    "asset": "/assets/papers/agent-r-2501-11425/fig2_agent_r_framework.png"
+  },
+  {
+    "id": "S005",
+    "type": "method",
+    "page": 5,
+    "section": "3.1 Reflection Trajectory Definition",
+    "summary_zh": "论文定义 initial trajectory、bad trajectory、good trajectory 与 revision trajectory；revision trajectory 在 bad path 的 transition point 后加入 revision signal，再接上对应 good path。",
+    "evidence": "Initial Trajectory; Bad Trajectory; Good Trajectory; Revision Trajectory; rs is a brief communication."
+  },
+  {
+    "id": "S006",
+    "type": "method",
+    "page": 6,
+    "section": "Trajectory Collection with MCTS",
+    "summary_zh": "MCTS 用 UCT 在 action tree 中平衡探索与利用；每个节点通过 rollout 到终止状态估计 reward，收集共享前缀后分叉的 good/bad 轨迹对。",
+    "evidence": "Selection, Expansion, Simulation, Backpropagation; UCT(s)=Q(s)+cuct sqrt(log Np(s)/N(s))."
+  },
+  {
+    "id": "S007",
+    "type": "method",
+    "page": 6,
+    "section": "Transition Point Determination with Actor Model",
+    "summary_zh": "相比 Direct-Revision 把修正放在 bad trajectory 末尾，Agent-R 让当前 actor model 判断 bad trajectory 中第一个错误 action，将 transition point 设在该处，以学习及时修正。",
+    "evidence": "Direct-Revision sets t'=Tb; model-guided approach identifies incorrect action at* and sets t'=t*."
+  },
+  {
+    "id": "S008",
+    "type": "method",
+    "page": 7,
+    "section": "3.2 Iterative Self-Training",
+    "summary_zh": "训练目标混合 good trajectories、revision trajectories 和 general dataset；每轮基于当前 actor model 重新收集 revision trajectories，再做 SFT。",
+    "evidence": "mixing revision trajectories with good trajectories; combine with ShareGPT; re-collect model-guided revision trajectories at each iteration."
+  },
+  {
+    "id": "T001",
+    "type": "table",
+    "page": 8,
+    "section": "Table 1",
+    "summary_zh": "实验在 WebShop、SciWorld、TextCraft 三个交互环境上进行；每轮 MCTS 会收集不同数量的 revision/good 数据，测试集分别为 200、200、100。",
+    "asset": "/assets/papers/agent-r-2501-11425/table1_data_statistics.png"
+  },
+  {
+    "id": "T002",
+    "type": "table",
+    "page": 9,
+    "section": "Table 2",
+    "summary_zh": "主结果中 Llama-3.1-8B w/ Agent-R 在 WebShop/SciWorld/TextCraft/Average 上达到 63.91/70.23/78.00/70.71，高于 ETO、Direct-Revision、GPT-4o 与 expert-trajectory agents。",
+    "asset": "/assets/papers/agent-r-2501-11425/table2_main_results.png"
+  },
+  {
+    "id": "F003",
+    "type": "figure",
+    "page": 10,
+    "section": "Figure 3",
+    "summary_zh": "迭代曲线显示 Agent-R 随迭代提升，并且通常优于 Direct-Revision、Optimal、Optimal+Good，说明 revision data 比单纯 optimal path 更有训练价值。",
+    "asset": "/assets/papers/agent-r-2501-11425/fig3_iteration_results.png"
+  },
+  {
+    "id": "T003",
+    "type": "table",
+    "page": 11,
+    "section": "Table 3",
+    "summary_zh": "自反思/纠错评估中，Agent-R iteration 3 平均 46.75，高于 Direct-Revision iteration 3 的 35.67，也高于 ETO、Optimal、GPT-4o 等对照。",
+    "asset": "/assets/papers/agent-r-2501-11425/table3_revision_results.png"
+  },
+  {
+    "id": "F004",
+    "type": "figure",
+    "page": 12,
+    "section": "Figure 4",
+    "summary_zh": "重复 action sequence 统计显示 Agent-R 训练能降低循环行为，说明 revision trajectories 有助于从 dead loops 中跳出。",
+    "asset": "/assets/papers/agent-r-2501-11425/fig4_loop_repetition.png"
+  },
+  {
+    "id": "F005",
+    "type": "figure",
+    "page": 12,
+    "section": "Figure 5",
+    "summary_zh": "revision length 随迭代显著缩短，表明 Agent 更早识别错误 action；例如 WebShop 从 vanilla 11.8 降到 Iter2 的 4.7。",
+    "asset": "/assets/papers/agent-r-2501-11425/fig5_revision_length.png"
+  },
+  {
+    "id": "F006",
+    "type": "figure",
+    "page": 13,
+    "section": "Figure 6",
+    "summary_zh": "多任务训练在后期比单任务训练更有效，Agent-R 收集的 trajectories 更适合跨任务泛化。",
+    "asset": "/assets/papers/agent-r-2501-11425/fig6_multitask_training.png"
+  },
+  {
+    "id": "S009",
+    "type": "conclusion",
+    "page": 14,
+    "section": "Conclusion",
+    "summary_zh": "结论强调 Agent-R 通过 MCTS 与模型引导 reflection 构造及时修正轨迹，改善错误恢复、循环避免与交互任务表现。",
+    "evidence": "timely revision of erroneous trajectories; recover from errors in real time; prevents looping and suboptimal behaviors."
+  }
+]

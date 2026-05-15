@@ -5,6 +5,13 @@
   <link>https://msxfXF.github.io</link>
   <description>分享、阅读、文章解读与思考札记。</description>
   <item>
+    <title>Agent-R 论文精读：让语言 Agent 学会及时反思与纠错</title>
+    <link>https://msxfXF.github.io/posts/agent-r-reflection-reading/</link>
+    <guid>https://msxfXF.github.io/posts/agent-r-reflection-reading/</guid>
+    <pubDate>Fri, 15 May 2026 00:00:00 GMT</pubDate>
+    <description>解读 Agent-R 如何用 MCTS 构造修正轨迹，并通过迭代自训练让 LLM Agent 学会在交互任务中及时反思。</description>
+  </item>
+<item>
     <title>AEPO 论文精读：Web Agent RL 里的熵不是越高越好</title>
     <link>https://msxfXF.github.io/posts/aepo-paper-reading/</link>
     <guid>https://msxfXF.github.io/posts/aepo-paper-reading/</guid>
