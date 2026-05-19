@@ -5,6 +5,20 @@
   <link>https://msxfXF.github.io</link>
   <description>分享、阅读、文章解读与思考札记。</description>
   <item>
+    <title>SDPO 论文精读：让强化学习从“结果分数”转向“失败反馈”学习</title>
+    <link>https://msxfXF.github.io/posts/rl-via-self-distillation-reading/</link>
+    <guid>https://msxfXF.github.io/posts/rl-via-self-distillation-reading/</guid>
+    <pubDate>Tue, 19 May 2026 00:00:00 GMT</pubDate>
+    <description>解读 Reinforcement Learning via Self-Distillation 如何把运行时报错、判题文本和成功样例转成密集信用分配，并在代码、推理与测试时训练中提升样本效率。</description>
+  </item>
+<item>
+    <title>Self-Distilled Reasoner 论文精读：同一个模型，如何用标准答案教会“较弱的自己”推理</title>
+    <link>https://msxfXF.github.io/posts/self-distilled-reasoner-2601-18734-reading/</link>
+    <guid>https://msxfXF.github.io/posts/self-distilled-reasoner-2601-18734-reading/</guid>
+    <pubDate>Tue, 19 May 2026 00:00:00 GMT</pubDate>
+    <description>解读 Self-Distilled Reasoner 如何提出 OPSD，用同一 LLM 的 teacher/student 双上下文做 on-policy self-distillation，在数学推理中以更低采样成本追平或超过 GRPO。</description>
+  </item>
+<item>
     <title>Agent-R 论文精读：让语言 Agent 学会及时反思与纠错</title>
     <link>https://msxfXF.github.io/posts/agent-r-reflection-reading/</link>
     <guid>https://msxfXF.github.io/posts/agent-r-reflection-reading/</guid>
@@ -26,32 +40,11 @@
     <description>解读 ARPO 如何用工具调用后的高熵信号做自适应 rollout，并用 advantage attribution 训练多轮工具型 Agent。</description>
   </item>
 <item>
-    <title>HTML 文章示例：做一篇更有表现力的解读</title>
-    <link>https://msxfXF.github.io/posts/html-playground/</link>
-    <guid>https://msxfXF.github.io/posts/html-playground/</guid>
-    <pubDate>Thu, 14 May 2026 00:00:00 GMT</pubDate>
-    <description>用原生 HTML 写文章片段，加入卡片、数字、引用和更自由的版式。</description>
-  </item>
-<item>
-    <title>文章解读模板：如何沉淀一篇好笔记</title>
-    <link>https://msxfXF.github.io/posts/article-interpretation-template/</link>
-    <guid>https://msxfXF.github.io/posts/article-interpretation-template/</guid>
-    <pubDate>Wed, 13 May 2026 00:00:00 GMT</pubDate>
-    <description>一个适合解读文章、报告或论文的轻量结构。</description>
-  </item>
-<item>
     <title>Context-Folding 论文精读：把长程 Agent 的上下文折起来</title>
     <link>https://msxfXF.github.io/posts/context-folding-paper-reading/</link>
     <guid>https://msxfXF.github.io/posts/context-folding-paper-reading/</guid>
     <pubDate>Wed, 13 May 2026 00:00:00 GMT</pubDate>
     <description>解读 Context-Folding 如何用 branch/return 与 FoldGRPO，让长程 Agent 在小活跃上下文里完成深度研究和代码任务。</description>
-  </item>
-<item>
-    <title>欢迎来到 MSXF Notes</title>
-    <link>https://msxfXF.github.io/posts/welcome/</link>
-    <guid>https://msxfXF.github.io/posts/welcome/</guid>
-    <pubDate>Wed, 13 May 2026 00:00:00 GMT</pubDate>
-    <description>这里会记录分享、阅读摘记、文章解读和一些持续生长的思考。</description>
   </item>
 </channel>
 </rss>

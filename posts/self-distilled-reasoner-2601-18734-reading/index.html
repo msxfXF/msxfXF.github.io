@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Self-Distilled Reasoner 论文精读：同一个模型，如何用标准答案教会“较弱的自己”推理 | MSXF Notes</title>
+  <meta name="description" content="解读 Self-Distilled Reasoner 如何提出 OPSD，用同一 LLM 的 teacher/student 双上下文做 on-policy self-distillation，在数学推理中以更低采样成本追平或超过 GRPO。">
+  <meta property="og:title" content="Self-Distilled Reasoner 论文精读：同一个模型，如何用标准答案教会“较弱的自己”推理 | MSXF Notes">
+  <meta property="og:description" content="解读 Self-Distilled Reasoner 如何提出 OPSD，用同一 LLM 的 teacher/student 双上下文做 on-policy self-distillation，在数学推理中以更低采样成本追平或超过 GRPO。">
+  <meta property="og:type" content="article">
+  <meta name="theme-color" content="#111827">
+  <link rel="alternate" type="application/rss+xml" title="MSXF Notes" href="/rss.xml">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <div class="site-bg"></div>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="MSXF Notes home">
+      <span class="brand-mark">M</span>
+      <span>MSXF Notes</span>
+    </a>
+    <nav class="nav" aria-label="Main navigation"><a class="nav-link" href="/">首页</a><a class="nav-link active" href="/posts/">文章</a><a class="nav-link" href="/about/">关于</a></nav>
+  </header>
+  <main><article class="article article-html">
+      <header class="article-header">
+        <a class="back-link" href="/posts/">← 返回文章</a>
+        <div class="post-meta"><time datetime="2026-05-19">2026年5月19日</time><span>19 min read</span><span>HTML</span></div>
+        <h1>Self-Distilled Reasoner 论文精读：同一个模型，如何用标准答案教会“较弱的自己”推理</h1>
+        <p>解读 Self-Distilled Reasoner 如何提出 OPSD，用同一 LLM 的 teacher/student 双上下文做 on-policy self-distillation，在数学推理中以更低采样成本追平或超过 GRPO。</p>
+        <div class="tags"><span class="tag">Paper Reading</span><span class="tag">AI</span><span class="tag">LLM</span><span class="tag">HTML</span></div>
+      </header>
+      <div class="prose prose-html"><section class="note-hero">
+  <p class="note-kicker">Paper Reading · arXiv:2601.18734</p>
+  <h2>一句话：这篇论文真正新颖的地方，不是再引入一个更强教师，而是让同一个模型在看过标准解之后，回头审视自己刚才那条 on-policy 推理轨迹，并对每个 token 给出更细粒度的纠偏信号。</h2>
+  <p><strong>论文：</strong>Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models<br>
+  <strong>作者：</strong>Siyan Zhao, Zhihui Xie, Mengchen Liu, Jing Huang, Guan Pang, Feiyu Chen, Aditya Grover<br>
+  <strong>版本日期：</strong>2026-03-20 (arXiv v3) · <strong>链接：</strong><a href="https://arxiv.org/abs/2601.18734">arXiv</a> · <a href="https://arxiv.org/pdf/2601.18734">PDF</a> · <a href="https://github.com/siyan-zhao/OPSD">Code</a><br>
+  <strong>适合读者：</strong>熟悉 SFT、GRPO、知识蒸馏、数学推理后训练的读者。阅读时长约 18 分钟。</p>
+</section>
+
+<div class="insight-grid">
+  <article class="insight-card">
+    <span>01 · Problem</span>
+    <h3>GRPO 的 reward 太稀疏，SFT 又太 off-policy</h3>
+    <p>论文要解决的是推理后训练里的一个老问题：SFT 能利用高质量解答，但训练分布和测试分布错位；GRPO 用 on-policy 采样，但 reward 只有最终对错，token 级 credit assignment 很弱。（Sec. 1-2, S001-S003）</p>
+  </article>
+  <article class="insight-card">
+    <span>02 · Key Idea</span>
+    <h3>同一个模型拆成 student 与 privileged teacher</h3>
+    <p>OPSD 不需要外部大教师。student 只看题目采样答案；teacher 用同样参数，但额外看到标准解，再沿 student 的 rollout 逐位置给出 next-token 分布，形成 dense distillation signal。（Sec. 3.2, S006-S008）</p>
+  </article>
+  <article class="insight-card">
+    <span>03 · Result</span>
+    <h3>更少采样 token，性能追平或超过 GRPO</h3>
+    <p>在 Qwen3-1.7B / 4B / 8B 的数学推理实验里，OPSD 全部优于同数据 SFT，并在所有规模上追平或超过 GRPO；而采样预算从 GRPO 的 8 × 16k token 降到每题 1 × 1024 token。（Sec. 4.1-4.2, T002, T006）</p>
+  </article>
+  <article class="insight-card">
+    <span>04 · Takeaway</span>
+    <h3>标准答案不只可用于监督，还可用于 hindsight 式自蒸馏</h3>
+    <p>这篇论文的真正贡献，是把“看过标准解后的反思能力”变成一个 on-policy、token 级、无需外部 teacher 的训练算法。（Sec. 3.2, Appx. D）</p>
+  </article>
+</div>
+
+<section class="callout-panel">
+  <h3>我的快速判断</h3>
+  <ul>
+    <li><strong>最有价值的洞察：</strong>标准解答不一定只该拿来做 teacher forcing，也可以作为 privileged context，帮助模型对自己刚采样出的错误路径做 hindsight 评估。</li>
+    <li><strong>最强的实验信息：</strong>在同数据、同 LoRA 设定下，OPSD 比 GRPO 用少得多的采样 token 也能拿到更好结果，说明 dense token-level signal 确实弥补了 sparse reward 的不足。</li>
+    <li><strong>最值得警惕的边界：</strong>它依赖“模型在看过标准解后确实能理解并 rationalize 解法”；如果底模没有这种能力，自蒸馏信号会变弱。</li>
+  </ul>
+</section>
+
+<h2>1. 这篇论文到底要解决什么问题？</h2>
+<p>这篇论文聚焦的是 <strong>reasoning LLM 的 post-training</strong>。作者认为，现有主流方法各有硬伤：（Sec. 1, S001-S002）</p>
+<ul>
+  <li><strong>SFT / off-policy distillation：</strong>有高质量标准解，但训练时永远跟着 expert path 走，测试时却要模型自己采样，存在 exposure bias 和 distribution mismatch。</li>
+  <li><strong>RLVR / GRPO：</strong>解决了 on-policy 问题，但学习信号通常只来自最终答案是否正确，reward 很稀疏，而且同一条回答里的所有 token 往往共享近似同一个 sequence-level advantage。</li>
+</ul>
+<p>作者特别强调了 GRPO 的两个瓶颈。第一，<strong>采样成本高</strong>：每题要采一组 response 才能做 group-relative advantage。第二，<strong>信息密度低</strong>：如果一组样本全对或全错，reward 标准差接近 0，梯度就会塌掉；即便不塌，token 级别也不知道“到底是哪个位置开始偏了”。（Sec. 2.2, Eq. 4-5, S003）</p>
+<p>所以这篇论文的问题可以概括成一句话：<strong>有没有一种方法既保留 on-policy training 的分布真实性，又拿到类似知识蒸馏那样的 dense token-level supervision，而且不需要额外更强教师？</strong></p>
+
+<figure>
+  <figcaption><strong>图 1 解读（论文 Figure 1，对应原文 F001）。</strong>论文把同一个 LLM 拆成两个条件分布：student 只看题目 <code>x</code>，teacher 同时看题目和标准解 <code>y*</code>。student 先 on-policy 生成 <code>ŷ</code>，然后 teacher 与 student 沿着同一条 <code>ŷ</code> 逐 token 计算分布差异，并把这个差异作为学习信号。这个视角很重要：不是 teacher 重新生成一条更好的轨迹，而是 teacher 对 student 已经走出的轨迹做 hindsight 评估。</figcaption>
+</figure>
+
+<h2>2. OPSD 的核心想法：同参模型，双上下文角色</h2>
+<p>论文提出的方法叫 <strong>On-Policy Self-Distillation（OPSD）</strong>。它最漂亮的地方在于：teacher 和 student 不是两个不同模型，而是<strong>同一个参数为 <code>θ</code> 的模型，在不同上下文条件下实例化出的两个策略</strong>。（Sec. 3.2, Eq. 1, Eq. 6）</p>
+<ul>
+  <li><strong>student policy</strong>：<code>p_S(. | x)</code>，只给问题，按当前策略采样回答。</li>
+  <li><strong>teacher policy</strong>：<code>p_T(. | x, y*)</code>，给问题再加参考解，作为 privileged information。</li>
+</ul>
+<p>训练时先让 student 生成一条 on-policy 响应 <code>ŷ</code>，然后 teacher 在“见过标准解”的前提下，沿 student 生成过的前缀 <code>ŷ_{&lt;n}</code> 计算每一步 next-token 分布，再和 student 的分布做 divergence matching。（Sec. 3.2, S006-S008）</p>
+<p>这里最需要理解的一点是：<strong>teacher 不需要真的再把整道题重新生成一遍</strong>。论文甚至在 Figure 2 里专门说明，teacher 的 rationalization 是“隐式发生”的：teacher 只是带着更丰富的上下文做一次 forward pass，对 student 的 rollout 逐位置打分，而不是显式再产出一条答案。（F002, S007）</p>
+
+<h2>3. 数学上它在优化什么？</h2>
+<p>OPSD 的目标函数可以写成：</p>
+<pre><code>L_OPSD(theta) = E_(x, y*) ~ S  E_ŷ ~ p_S(.|x)
+  [ sum_n D( p_T(.|x, y*, ŷ_&lt;n) || p_S(.|x, ŷ_&lt;n) ) ]</code></pre>
+<p>直觉上，这个损失在说：</p>
+<ul>
+  <li>如果 teacher 在看到标准解后，认为当前前缀下 student 的分布基本合理，那么更新就小；</li>
+  <li>如果 teacher 觉得 student 在某一步明显偏了，那么该位置的 divergence 就大，student 就会在那里收到更强的修正。</li>
+</ul>
+<p>这和 sequence-level reward 的最大区别在于：<strong>学习信号是 token-wise、甚至 full-vocabulary logit-wise 的</strong>。也正因此，作者在附录 D 里把 OPSD 写成了 dense-reward policy gradient：每个 token 都有一个 advantage，近似等于 teacher 对该 token 的对数概率减去 student 对该 token 的对数概率。（Appx. D.2, Eq. 9）</p>
+
+<section class="callout-panel">
+  <h3>怎么把这个目标和 GRPO 区分开？</h3>
+  <ul>
+    <li><strong>GRPO：</strong>先采多条回答，拿最终 binary reward，组内归一化后给整条序列一个近似共享的 advantage。</li>
+    <li><strong>OPSD：</strong>先采一条回答，再让 privileged teacher 沿这条轨迹逐 token 看“这里本来更该怎么延续”。</li>
+    <li>所以 GRPO 更像 outcome-based learning，OPSD 更像 hindsight token-level relabeling。</li>
+  </ul>
+</section>
+
+<h2>4. 它和已有方法到底差在哪？</h2>
+<p>论文 Table 1 给了一个很清晰的定位：OPSD 同时满足四件事——<strong>on-policy data、dense learning signal、低采样成本、无需外部 teacher</strong>。这正是它相对 SFT、GRPO 和普通 on-policy distillation 的组合优势。（T001）</p>
+<div class="insight-grid">
+  <article class="insight-card">
+    <span>C1</span>
+    <h3>比 SFT 多了 on-policy</h3>
+    <p>SFT 在固定专家轨迹上学，测试时分布会漂。OPSD 用 student 自己采样出来的轨迹训练，因此 student 学的是“自己真的会走到的状态”。</p>
+  </article>
+  <article class="insight-card">
+    <span>C2</span>
+    <h3>比 GRPO 多了 dense token signal</h3>
+    <p>GRPO 的学习信号主要来自结果对错；OPSD 则在每个位置都能比较 teacher/student 的分布差。</p>
+  </article>
+  <article class="insight-card">
+    <span>C3</span>
+    <h3>比外部 on-policy distillation 省去大老师</h3>
+    <p>先前 on-policy distillation 常要求另一个更强模型提供 token supervision。OPSD 直接让同一模型在 privileged context 下教自己。</p>
+  </article>
+  <article class="insight-card">
+    <span>C4</span>
+    <h3>比 PRM 路线更直接</h3>
+    <p>它不训练独立 process reward model，而是直接把标准解融入 teacher 上下文，让 teacher 即时提供密集分布监督。</p>
+  </article>
+</div>
+
+<h2>5. Figure 2 为什么重要：teacher 不是“抄标准答案”，而是“理解标准答案后再看 student”</h2>
+<p>Figure 2 给了一个非常关键的 prompt 设计。student 侧只看到题目与“Answer:”；teacher 侧则看到同一题目外加一段 reference solution，再要求其“理解这份解法后，用自己的方式尝试解决”。（F002）</p>
+<p>这个 prompt 设计背后其实有两个隐含假设：</p>
+<ol>
+  <li><strong>模型具备 rationalization 能力。</strong>也就是说，看完一份标准解，它不是死记，而是能在分布层面理解“下一步大概应该怎么走”。</li>
+  <li><strong>teacher 与 student 的差异来自上下文，而不是参数规模。</strong>这和传统 distillation 很不一样。传统 KD 的 teacher 通常是更大或更强模型；这里 teacher 只是“信息更多的自己”。</li>
+</ol>
+<p>这也是为什么我觉得这篇论文的贡献更偏“学习信号设计”，而不只是“又一种 RL trick”。</p>
+
+<h2>6. 实验设置：它到底在什么条件下赢？</h2>
+<p>实验全部做在数学推理任务上，底模是 <strong>Qwen3-1.7B / 4B / 8B instruct</strong>，训练数据来自 OpenThoughts 的数学推理子集，最多 30K 道题，评测集是 AIME 2024、AIME 2025、HMMT 2025。（Sec. 4.1）</p>
+<p>对比方法有三个：</p>
+<ul>
+  <li><strong>Base</strong>：原始 instruct 模型；</li>
+  <li><strong>SFT</strong>：在同一数据上做 supervised fine-tuning；</li>
+  <li><strong>GRPO</strong>：用答案正确性做 verifiable reward 的 RL baseline。</li>
+</ul>
+<p>训练配置里最关键的差别在 Table 6：</p>
+<ul>
+  <li><strong>GRPO</strong>：每题 8 个 generations，max completion length 16,000，训练 500 steps。</li>
+  <li><strong>OPSD</strong>：每题 1 个 generation，max completion length 1,024，训练 100 steps。</li>
+</ul>
+<p>换句话说，OPSD 不是靠“生成得更多”取胜，恰恰相反，它是在极大压缩采样预算的情况下仍然拿到更好结果。（T006）</p>
+
+<h2>7. 主结果：为什么说它“更省 token 还更强”？</h2>
+<p>Table 2 是这篇论文的主结果。三种模型规模下，OPSD 都优于同数据 SFT，并且全部追平或超过 GRPO。（T002）</p>
+<ul>
+  <li><strong>Qwen3-8B：</strong>Base 61.8，GRPO 64.0，OPSD 64.8。</li>
+  <li><strong>Qwen3-4B：</strong>Base 61.2，GRPO 62.7，OPSD 63.6。</li>
+  <li><strong>Qwen3-1.7B：</strong>Base 37.1，GRPO 37.7，OPSD 43.4。</li>
+</ul>
+<p>我觉得最值得盯住的是 1.7B 结果：在更小的模型上，OPSD 对 GRPO 的提升反而最显著，平均分从 37.7 拉到 43.4。它说明了一件事：哪怕模型规模不大，只要还具备一定“看懂标准解”的能力，teacher/student 双上下文就已经能提供比 binary reward 更有用的学习信号。</p>
+<p>而且 Figure 3 显示，在训练 step 和生成 token 维度上，OPSD 的学习曲线都更高效。论文给出的解释是：GRPO 尽管采样更多 token，但其中大部分 token 并没有得到与之匹配的信息密度；OPSD 虽然采样短很多，但 teacher 给出的 supervision 是 dense 的，因此每个采样 token 的“信息产出”更高。（F003, Sec. 4.2）</p>
+
+<h2>8. 为什么 SFT 反而会掉点？</h2>
+<p>Table 2 里一个很容易被忽略但很重要的现象是：<strong>SFT 在三个模型规模上都低于 base model</strong>。（T002）</p>
+<p>论文作者的解释是，OpenThoughts 里的标准解偏“简洁解法”，做 SFT 会把模型的 test-time reasoning length 拉短，结果反而损害了需要更充分推理时的表现。（Sec. 4.2）</p>
+<p>这其实很有启发性：对于 reasoning 模型，<strong>把标准解直接当 imitation target 并不一定是最优的</strong>。标准解更像“可以帮助你理解”的 privileged evidence，而不是一定要逐字逐句模仿的行为模板。OPSD 恰恰利用了这一点：它不要求 student 输出和标准解一样，而是让标准解只在 teacher 端发挥作用。</p>
+
+<h2>9. 关键消融一：为什么 forward KL 最有效？</h2>
+<p>在 Table 3 里，作者比较了 forward KL、reverse KL 和 JSD。结果很明确：<strong>forward KL 最强</strong>，Qwen3-1.7B 在 AIME25 上能从 36.7 提到 43.9；reverse KL 和 JSD 基本没带来稳定收益。（T003）</p>
+<p>直觉上，这也合理。因为 teacher 是“更有信息的一侧”，forward KL 会更鼓励 student 覆盖 teacher 认为重要的概率质量，而不是只盯住自己已经擅长的 mode。对于“我已经知道正确解法长什么样”的 teacher 来说，这种覆盖导向更符合知识转移需求。</p>
+
+<h2>10. 关键消融二：teacher 开 thinking mode，student 反而关掉更好</h2>
+<p>Table 5 是我觉得整篇论文里非常有意思的一个设计洞察。作者比较了 Qwen3 的 thinking-mode on/off 组合，按 token 类型统计 per-token KL。结果发现：<strong>student 用 TM-off、teacher 用 TM-on</strong> 时，数学相关 token 上的 KL 最大，学习信号最强。（T005）</p>
+<p>这意味着什么？我的理解是：</p>
+<ul>
+  <li>teacher 开 thinking mode，会给出更“展开”的内部 reasoning 分布，因此对关键数学 token 的偏好差异更明显；</li>
+  <li>student 关掉 thinking mode，生成更紧凑，teacher 反而更容易在真正关键的位置上给出强监督，而不是把 signal 分散到大量风格 token 上。</li>
+</ul>
+<p>这和很多人直觉相反：不是 teacher/student 都越会“长链思考”越好，而是 teacher 更会解释、student 更紧凑时，distillation 反而可能更有效。</p>
+
+<h2>11. 关键消融三：为什么要做 per-token KL clipping？</h2>
+<p>Figure 4 研究的是 per-token pointwise KL clipping。作者发现如果不做 clipping，训练容易 collapse；加入 pointwise clipping 后，性能显著更稳。（F004）</p>
+<p>原因也不难理解：teacher 和 student 在少数 token 上的分布差异可能极大，这会让局部梯度爆得太猛。论文因此不是简单裁剪整个序列 loss，而是对 token-level 项做 clipping，让 dense signal 依然存在，但不会被极少数极端位置主导。</p>
+
+<h2>12. Full-vocabulary logit distillation 为什么优于 sampled-token？</h2>
+<p>Table 4 显示，<strong>full-vocabulary logit distillation</strong> 明显优于 sampled-token distillation：在 Qwen3-4B 上，AIME25 从 82.1 提到 84.1，HMMT25 从 57.3 提到 60.0。（T004）</p>
+<p>这说明 OPSD 的收益不只是“把采样到的 token 再重加权一下”，而更像是 teacher 在整个候选词表上重塑 student 的局部分布。换句话说，它教的不仅是“这个 token 对不对”，还包括“附近哪些备选也不该选”。</p>
+
+<h2>13. 我怎么理解这篇论文的真正贡献？</h2>
+<p>如果只用一句更抽象的话来概括，我会说：<strong>OPSD 把 reasoning dataset 里的标准解，从 imitation target 变成了 privileged critic context</strong>。</p>
+<p>这带来三层贡献：</p>
+<ol>
+  <li><strong>训练范式层：</strong>在 SFT 与 RLVR 之间开了一条新路——既 on-policy，又有 dense token-level signal。</li>
+  <li><strong>算法层：</strong>用同参 teacher/student 双条件分布，实现无需外部教师的 self-distillation。</li>
+  <li><strong>解释层：</strong>附录把它写成 dense-reward policy gradient，也澄清了它和 STaR 这类 sequence-level 自训练方法的差别：STaR 的 reward 更偏序列级，OPSD 的 reward 是 token 级的。（Appx. D）</li>
+</ol>
+
+<blockquote class="pull-quote">
+  <p>这篇论文最值得记住的一点是：标准答案不只是用来模仿的，它还可以成为一种 privileged context，帮助模型回看自己刚才究竟是从哪一步开始偏掉的。</p>
+</blockquote>
+
+<h2>14. 局限与边界</h2>
+<div class="insight-grid">
+  <article class="insight-card">
+    <span>L1</span>
+    <h3>依赖底模的 rationalization 能力</h3>
+    <p>如果模型看了标准解也无法形成更好的局部分布判断，那么 teacher/student 差异就不会提供足够有用的监督。论文默认 Qwen3 已具备这种能力，但对更弱模型未必成立。（Sec. 3.2）</p>
+  </article>
+  <article class="insight-card">
+    <span>L2</span>
+    <h3>当前验证集中在数学推理</h3>
+    <p>数学题有标准解和可验证答案，适合这种 privileged teacher 设定。代码、工具调用、多轮 agent 任务能否同样稳定获益，还需要更多实证。</p>
+  </article>
+  <article class="insight-card">
+    <span>L3</span>
+    <h3>teacher 仍有额外前向开销</h3>
+    <p>它比 GRPO 采样便宜很多，但不等于零成本。teacher 仍要沿 student rollout 计算 full-vocabulary 分布，因此训练算力并不是白送的。</p>
+  </article>
+  <article class="insight-card">
+    <span>L4</span>
+    <h3>标准解风格可能影响 teacher 监督形态</h3>
+    <p>论文已经观察到 concise solutions 会让直接 SFT 掉点；虽然 OPSD 缓解了这个问题，但不同数据集的 solution style 仍可能影响 teacher 提供的监督分布。</p>
+  </article>
+</div>
+
+<h2>15. 如果我要复现或改造 OPSD，最小实现应该抓什么？</h2>
+<p>我会优先把它还原成下面这个最小 pipeline：</p>
+<pre><code>1. 准备 (problem, reference solution) 数据
+2. 用当前 student policy 对 problem 采样一条 on-policy rollout
+3. 构造 teacher prompt: problem + reference solution
+4. 沿 student rollout 的每个前缀，分别算
+   - p_S(. | x, y_&lt;n)
+   - p_T(. | x, y*, y_&lt;n)
+5. 计算 forward KL 或 clipped pointwise KL
+6. 仅对 student logits 反传梯度
+7. 监控
+   - benchmark accuracy
+   - token efficiency
+   - collapse / entropy
+   - thinking-mode 组合效果</code></pre>
+<p>如果你已经有一个 GRPO pipeline，这件事并不一定要推倒重来。最可能的落地方式是：保留现有 sampling / evaluation 基础设施，把 dense teacher-student divergence 作为一条额外训练支路，先在 reasoning dataset 上验证 token efficiency 是否真的提升。</p>
+
+<h2>16. 深度 Q&amp;A</h2>
+<h3>Q1：OPSD 和普通知识蒸馏最大的区别是什么？</h3>
+<p>普通知识蒸馏多半在固定数据上做 off-policy imitation；OPSD 则先让 student 自己采样，再沿这条 on-policy 轨迹做 teacher-student 匹配，所以它解决的是“训练时看到的数据分布更像推理时自己会走到的分布”。</p>
+
+<h3>Q2：为什么它不需要外部强教师？</h3>
+<p>因为 teacher 的优势不来自参数更强，而来自<strong>上下文更多</strong>：它看到了参考解。论文的核心假设是，同一个足够强的 reasoning model 在获得 privileged solution context 后，已经可以扮演一个有效的 hindsight teacher。</p>
+
+<h3>Q3：这是不是只是“看完答案再做 SFT”？</h3>
+<p>不是。SFT 会把参考解直接当成学生输出目标；OPSD 则把参考解只放在 teacher 侧，用来重新评价 student 的 on-policy rollout。student 学的是“如何调整自己的分布”，不是“复读标准解文本”。</p>
+
+<h3>Q4：为什么 GRPO 会在这组数据上表现得不够稳？</h3>
+<p>因为 OpenThoughts 这类数学数据上，很多采样组会出现 reward variance 接近 0 的情况，导致 group-normalized advantage 失效。论文在 Figure 3 中把这解释为 reward diversity collapse。</p>
+
+<h3>Q5：附录里为什么要把 OPSD 写成 policy gradient？</h3>
+<p>因为这样可以说明它不是一个“和 RL 无关的 distillation loss”，而是可以被理解为一种 dense token-level reward 的 policy optimization。这个解释把它和 GRPO、STaR 放到了同一分析框架里，便于理解它为什么更高效。</p>
+
+<h3>Q6：我最想看到但论文还没做充分的实验是什么？</h3>
+<p>我最想看的是它在代码推理和 agentic tool-use 场景里的表现。因为这些任务同样有 reference traces 或 successful demonstrations，也同样受 sparse reward 之苦；如果 OPSD 能迁移过去，它的意义会更大。</p>
+
+<h2>参考与出处</h2>
+<ul>
+  <li>论文页面：<a href="https://arxiv.org/abs/2601.18734">https://arxiv.org/abs/2601.18734</a></li>
+  <li>PDF：<a href="https://arxiv.org/pdf/2601.18734">https://arxiv.org/pdf/2601.18734</a></li>
+  <li>代码：<a href="https://github.com/siyan-zhao/OPSD">https://github.com/siyan-zhao/OPSD</a></li>
+  <li>本文依据 arXiv HTML/PDF 原文撰写；证据索引见 <code>/assets/papers/self-distilled-reasoner-2601-18734/source_map.json</code>。</li>
+</ul></div>
+    </article></main>
+  <footer class="site-footer">
+    <p>© 2026 MSXF Notes</p>
+    <p>Notes, readings, and considered interpretation.</p>
+  </footer>
+</body>
+</html>
