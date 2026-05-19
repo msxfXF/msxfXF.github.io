@@ -12,6 +12,13 @@
     <description>解读 Reinforcement Learning via Self-Distillation 如何把运行时报错、判题文本和成功样例转成密集信用分配，并在代码、推理与测试时训练中提升样本效率。</description>
   </item>
 <item>
+    <title>读懂 SDFT：Self-Distillation 如何让模型持续学习而不遗忘</title>
+    <link>https://msxfXF.github.io/posts/self-distillation-enables-continual-learning-reading/</link>
+    <guid>https://msxfXF.github.io/posts/self-distillation-enables-continual-learning-reading/</guid>
+    <pubDate>Tue, 19 May 2026 00:00:00 GMT</pubDate>
+    <description>精读 Self-Distillation Enables Continual Learning，拆解 SDFT 如何把示范学习改写成近似 on-policy 的自蒸馏，并分析它为何比 SFT 更能抗遗忘。</description>
+  </item>
+<item>
     <title>Self-Distilled Reasoner 论文精读：同一个模型，如何用标准答案教会“较弱的自己”推理</title>
     <link>https://msxfXF.github.io/posts/self-distilled-reasoner-2601-18734-reading/</link>
     <guid>https://msxfXF.github.io/posts/self-distilled-reasoner-2601-18734-reading/</guid>
