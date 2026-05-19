@@ -33,7 +33,7 @@
   <p class="note-kicker">Paper Reading · arXiv:2601.20802</p>
   <h2>一句话：这篇论文的核心不是“再造一个更强教师”，而是让模型在看到失败反馈后，回头重判自己刚才每一步 token 到底哪里错了。</h2>
   <p><strong>论文：</strong>Reinforcement Learning via Self-Distillation<br>
-  <strong>作者：</strong>Jonas Hbotter, Frederike Lbbeck, Lejs Behric, Anton Baumann, Marco Bagatella, Daniel Marta, Ido Hakimi, Idan Shenfeld, Thomas Kleine Buening, Carlos Guestrin, Andreas Krause<br>
+  <strong>作者：</strong>Jonas Hubotter, Frederike Lubeck, Lejs Behric, Anton Baumann, Marco Bagatella, Daniel Marta, Ido Hakimi, Idan Shenfeld, Thomas Kleine Buening, Carlos Guestrin, Andreas Krause<br>
   <strong>机构：</strong>ETH Zurich, Max Planck Institute for Intelligent Systems, MIT, Stanford<br>
   <strong>版本日期：</strong>2026-01-28 · <strong>链接：</strong><a href="https://arxiv.org/abs/2601.20802">arXiv</a> · <a href="https://arxiv.org/pdf/2601.20802">PDF</a> · <a href="https://github.com/lasgroup/SDPO">Code</a><br>
   <strong>适合读者：</strong>熟悉 RLHF / RLVR、GRPO / PPO、LLM 代码与推理后训练的读者。阅读时长约 22 分钟。</p>
@@ -207,7 +207,7 @@
   <li><strong>算法层：</strong>提出一种无需外部强教师的 on-policy self-distillation 方案，把 hindsight feedback 直接转成 token / logit 级学习信号。</li>
   <li><strong>经验层：</strong>证明 rich feedback 与 dense credit assignment 是互补的；同时证明这种方法并不局限于离线蒸馏，而能嵌入真实 RL pipeline，甚至扩展到 test-time specialization。</li>
 </ol>
-<p>这三点合在一起，才让它不仅是“另一个 RL trick”，而更像是对 LLM post-training 信号形态的一次重构。</p>
+<p>这三点合在一起，才让它不仅是“另一个 RL trick，而更像是对 LLM post-training 信号形态的一次重构。</p>
 
 <blockquote class="pull-quote">
   <p>我对这篇论文最核心的总结是：很多后训练环境不是“没有老师”，而是我们之前没有把环境本身的失败反馈当作老师。</p>
