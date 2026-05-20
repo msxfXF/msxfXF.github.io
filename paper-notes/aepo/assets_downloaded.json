@@ -1,0 +1,42 @@
+[
+  {
+    "src": "x1.png",
+    "file": "fig1_overview.png",
+    "bytes": 457582
+  },
+  {
+    "src": "x2.png",
+    "file": "fig2_entropy_challenges.png",
+    "bytes": 221201
+  },
+  {
+    "src": "x3.png",
+    "file": "fig3_entropy_statistics.png",
+    "bytes": 270073
+  },
+  {
+    "src": "x4.png",
+    "file": "fig4_aepo_overview.png",
+    "bytes": 323323
+  },
+  {
+    "src": "x5.png",
+    "file": "fig5_pass_at_k.png",
+    "bytes": 250076
+  },
+  {
+    "src": "figures/tsne_visual.png",
+    "file": "fig6_rollout_diversity.png",
+    "bytes": 756886
+  },
+  {
+    "src": "x6.png",
+    "file": "fig7_branch_tool_efficiency.png",
+    "bytes": 368463
+  },
+  {
+    "src": "x7.png",
+    "file": "fig8_training_dynamics.png",
+    "bytes": 450250
+  }
+]

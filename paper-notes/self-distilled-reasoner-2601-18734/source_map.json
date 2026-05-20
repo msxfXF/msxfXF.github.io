@@ -1,0 +1,132 @@
+{
+  "metadata": {
+    "title": "Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models",
+    "arxiv_id": "2601.18734",
+    "arxiv": "2601.18734v3",
+    "url": "https://arxiv.org/abs/2601.18734",
+    "pdf": "https://arxiv.org/pdf/2601.18734",
+    "code": "https://github.com/siyan-zhao/OPSD",
+    "date": "2026-03-20",
+    "notes_slug": "self-distilled-reasoner-2601-18734"
+  },
+  "anchors": [
+    {
+      "id": "S001",
+      "section": "1 Introduction",
+      "claim": "SFT suffers from exposure bias and off-policy mismatch; RLVR suffers from high sampling cost and sparse reward.",
+      "evidence": "Introduction and Background discuss limitations of RLVR and SFT."
+    },
+    {
+      "id": "S002",
+      "section": "2.2 Reinforcement Learning with Verifiable Rewards",
+      "claim": "GRPO uses group-normalized binary rewards and sequence-level advantage.",
+      "evidence": "Eq. 4-5 define GRPO advantage and objective."
+    },
+    {
+      "id": "S003",
+      "section": "1 Introduction / 4.2 Main Results",
+      "claim": "GRPO can stagnate when reward std within a group is zero.",
+      "evidence": "Introduction and Figure 3 discussion mention reward diversity collapse."
+    },
+    {
+      "id": "S004",
+      "section": "3 Methods",
+      "claim": "OPSD instantiates student and teacher from the same model with different conditioning context.",
+      "evidence": "Section 3 and Figure 2 explain p_S(.|x) and p_T(.|x,y*)."
+    },
+    {
+      "id": "S005",
+      "section": "3.2 On-Policy Self-Distillation",
+      "claim": "Teacher uses privileged information from the reference solution to supervise the student rollout.",
+      "evidence": "Section 3.2 motivation and teacher/student definitions."
+    },
+    {
+      "id": "S006",
+      "section": "Equation 1 / Equation 6",
+      "claim": "OPSD minimizes per-token divergence between teacher and student along the student rollout.",
+      "evidence": "Eq. 1 and Eq. 6."
+    },
+    {
+      "id": "S007",
+      "section": "Figure 2",
+      "claim": "Teacher rationalization is implicit and does not require explicit generation of a teacher answer.",
+      "evidence": "Figure 2 caption."
+    },
+    {
+      "id": "S008",
+      "section": "Appendix D.2",
+      "claim": "OPSD can be interpreted as dense-reward policy gradient with token-level reward based on log-prob difference.",
+      "evidence": "Eq. 9 and Appendix D.2."
+    },
+    {
+      "id": "T001",
+      "type": "table",
+      "label": "Table 1",
+      "claim": "OPSD combines on-policy data, dense learning signal, low sampling cost, and no external teacher.",
+      "evidence": "Comparison table of training methods."
+    },
+    {
+      "id": "F001",
+      "type": "figure",
+      "label": "Figure 1",
+      "claim": "Overview of OPSD showing shared-model teacher/student with per-token divergence over student rollout.",
+      "evidence": "Figure 1 caption."
+    },
+    {
+      "id": "F002",
+      "type": "figure",
+      "label": "Figure 2",
+      "claim": "Prompt example for student and teacher policies with privileged reference solution.",
+      "evidence": "Figure 2 caption."
+    },
+    {
+      "id": "F003",
+      "type": "figure",
+      "label": "Figure 3",
+      "claim": "OPSD is more token-efficient than GRPO and avoids reward diversity collapse.",
+      "evidence": "Figure 3 caption."
+    },
+    {
+      "id": "T002",
+      "type": "table",
+      "label": "Table 2",
+      "claim": "OPSD outperforms SFT and matches or exceeds GRPO across Qwen3 model sizes on math benchmarks.",
+      "evidence": "Main results table."
+    },
+    {
+      "id": "T003",
+      "type": "table",
+      "label": "Table 3",
+      "claim": "Forward KL outperforms reverse KL and JSD.",
+      "evidence": "Divergence objective ablation."
+    },
+    {
+      "id": "F004",
+      "type": "figure",
+      "label": "Figure 4",
+      "claim": "Per-token pointwise KL clipping prevents collapse.",
+      "evidence": "Figure 4 caption."
+    },
+    {
+      "id": "T004",
+      "type": "table",
+      "label": "Table 4",
+      "claim": "Full-vocabulary logit distillation outperforms sampled-token distillation.",
+      "evidence": "Table 4 ablation."
+    },
+    {
+      "id": "T005",
+      "type": "table",
+      "label": "Table 5",
+      "claim": "TM-off student with TM-on teacher yields strongest KL on math tokens.",
+      "evidence": "Token category KL table."
+    },
+    {
+      "id": "T006",
+      "type": "table",
+      "label": "Table 6",
+      "claim": "GRPO uses 8 generations and 16k length, while OPSD uses 1 generation and 1024 length under the reported setup.",
+      "evidence": "Training configuration table."
+    }
+  ]
+}
