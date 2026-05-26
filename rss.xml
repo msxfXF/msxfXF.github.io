@@ -5,6 +5,13 @@
   <link>https://msxfXF.github.io</link>
   <description>分享、阅读、文章解读与思考札记。</description>
   <item>
+    <title>SkillOpt 论文精读：把 Agent Skill 当成可训练参数</title>
+    <link>https://msxfXF.github.io/posts/skillopt-2605-23904-reading/</link>
+    <guid>https://msxfXF.github.io/posts/skillopt-2605-23904-reading/</guid>
+    <pubDate>Tue, 26 May 2026 00:00:00 GMT</pubDate>
+    <description>解读 SkillOpt 如何用 rollout、反思、文本学习率和验证门，把冻结 Agent 的技能文档训练成可迁移的程序性知识。</description>
+  </item>
+<item>
     <title>SDPO 论文精读：让强化学习从“结果分数”转向“失败反馈”学习</title>
     <link>https://msxfXF.github.io/posts/rl-via-self-distillation-reading/</link>
     <guid>https://msxfXF.github.io/posts/rl-via-self-distillation-reading/</guid>
