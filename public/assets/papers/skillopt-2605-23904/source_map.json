@@ -1,0 +1,160 @@
+{
+  "paper": {
+    "title": "SkillOpt: Executive Strategy for Self-Evolving Agent Skills",
+    "arxiv": "2605.23904v2",
+    "date": "2026-05-25",
+    "url": "https://arxiv.org/abs/2605.23904",
+    "code": "https://aka.ms/SkillOpt"
+  },
+  "blocks": [
+    {
+      "id": "S001",
+      "page": 1,
+      "section": "Abstract",
+      "snippet": "SkillOpt is ... the first systematic controllable text-space optimizer for agent skills... bounded add/delete/replace edits... held-out validation score.",
+      "note": "将 skill 文档作为冻结 agent 的外部可训练状态。"
+    },
+    {
+      "id": "S002",
+      "page": 2,
+      "section": "Introduction",
+      "snippet": "Agent skills provide a natural interface ... a portable natural-language artifact that packages procedures, domain heuristics, tool policies, output constraints, and failure modes.",
+      "note": "skill 是程序性适配层，而不只是 prompt。"
+    },
+    {
+      "id": "S003",
+      "page": 2,
+      "section": "Introduction",
+      "snippet": "SkillOpt repeatedly samples trajectory batches, analyzes successes and failures, and asks a frontier optimizer model to propose structured add/delete/replace edits.",
+      "note": "核心循环：rollout -> reflection -> bounded edit -> validation gate。"
+    },
+    {
+      "id": "S004",
+      "page": 4,
+      "section": "Method / Problem Setup",
+      "snippet": "Given train, selection, and test splits ... selects the best skill on D_sel, and reports final performance on D_test.",
+      "note": "训练、选择、测试三分，避免把验证成功误报为泛化。"
+    },
+    {
+      "id": "S005",
+      "page": 4,
+      "section": "Forward Pass",
+      "snippet": "At each optimization step, the target model runs a rollout batch from D_tr with the current skill... This batch is the evidence unit.",
+      "note": "rollout batch 是文本空间优化的证据单元。"
+    },
+    {
+      "id": "S006",
+      "page": 5,
+      "section": "Backward Pass",
+      "snippet": "Failure minibatches propose missing or corrective rules; success minibatches preserve behaviors that already work.",
+      "note": "失败给纠错规则，成功给保留规则。"
+    },
+    {
+      "id": "S007",
+      "page": 5,
+      "section": "Bounded Text Updates",
+      "snippet": "The learning-rate analogue in SkillOpt is the edit budget L_t... Unbounded rewrites can erase useful rules...",
+      "note": "文本学习率就是每步允许的编辑数。"
+    },
+    {
+      "id": "S008",
+      "page": 5,
+      "section": "Validation Gate",
+      "snippet": "Every candidate skill is evaluated on D_sel... If it improves ... accepted; otherwise rejected.",
+      "note": "验证门把自反思变成 propose-and-test，而非无条件改写。"
+    },
+    {
+      "id": "S009",
+      "page": 6,
+      "section": "Slow/Meta Update",
+      "snippet": "The optimizer model writes a concise longitudinal guidance block into a protected slow-update field... The meta skill is optimizer-side only.",
+      "note": "慢更新沉淀跨 epoch 经验，meta skill 不部署。"
+    },
+    {
+      "id": "S010",
+      "page": 7,
+      "section": "Experiments",
+      "snippet": "six benchmarks... seven target models... three execution modes (direct chat, Codex harness, Claude Code harness).",
+      "note": "实验覆盖 QA、表格、文档、多模态、数学、ALFWorld 和三类 harness。"
+    },
+    {
+      "id": "S011",
+      "page": 10,
+      "section": "Main Results",
+      "snippet": "SkillOpt wins or matches the best measured result on 52 of 52 evaluated cells.",
+      "note": "主结果：52/52 最优或并列最优。"
+    },
+    {
+      "id": "S012",
+      "page": 10,
+      "section": "Main Results",
+      "snippet": "On GPT-5.5 direct chat... rises from 58.8 (no skill) to 82.3 (SkillOpt), a +23.5 point absolute improvement.",
+      "note": "GPT-5.5 direct chat 平均 +23.5。"
+    },
+    {
+      "id": "S013",
+      "page": 11,
+      "section": "Ablations",
+      "snippet": "removing the rejected-edit buffer lowers scores... removing both meta skill and slow update drops SpreadsheetBench from 77.5 to 55.0.",
+      "note": "负反馈和慢/元更新是稳定器。"
+    },
+    {
+      "id": "S014",
+      "page": 13,
+      "section": "Transfer",
+      "snippet": "All four cross-model rows are positive... harness-shift rows ... SpreadsheetBench Codex to Claude Code +59.7.",
+      "note": "skill artifact 有跨模型、跨 harness 可迁移性。"
+    },
+    {
+      "id": "S015",
+      "page": 14,
+      "section": "Cost",
+      "snippet": "final best_skill.md ranges from 379 tokens to 1,995 tokens... edits ... between 1 and 4.",
+      "note": "部署产物很小，接受编辑数很少。"
+    }
+  ],
+  "figures": [
+    {
+      "id": "F001",
+      "page": 2,
+      "file": "fig1_overview_pdf.png",
+      "caption": "Overview of SkillOpt"
+    },
+    {
+      "id": "F002",
+      "page": 4,
+      "file": "fig2_pipeline.png",
+      "caption": "Pipeline of SkillOpt"
+    },
+    {
+      "id": "T001",
+      "page": 7,
+      "file": "table1_main_results.png",
+      "caption": "Main results"
+    },
+    {
+      "id": "T002",
+      "page": 8,
+      "file": "table2_3_ablations.png",
+      "caption": "Hyperparameter and component ablations"
+    },
+    {
+      "id": "T003",
+      "page": 9,
+      "file": "table4_transfer.png",
+      "caption": "Transfer across models, harnesses, benchmarks"
+    },
+    {
+      "id": "F003",
+      "page": 12,
+      "file": "fig3_epoch_trends_pdf.png",
+      "caption": "Performance trends across epoch checkpoints"
+    },
+    {
+      "id": "T004",
+      "page": 14,
+      "file": "table5_6_cost_optimizer.png",
+      "caption": "Optimizer strength, cost, edit economy"
+    }
+  ]
+}
