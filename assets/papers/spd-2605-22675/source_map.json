@@ -1,0 +1,114 @@
+[
+  {
+    "id": "S001",
+    "page": 1,
+    "section": "Abstract",
+    "summary": "Self-distillation bootstraps LLMs by training on their own generations; existing methods rely on external signals or raw outputs, and outputs entangle task-relevant capability with style/artifacts/errors.",
+    "confidence": "high"
+  },
+  {
+    "id": "S002",
+    "page": 2,
+    "section": "Introduction",
+    "summary": "SPD uses a small calibration set to extract a low-rank capability subspace from gradients on correctness-defining token positions, then uses KV projection hooks during self-generation.",
+    "confidence": "high"
+  },
+  {
+    "id": "S003",
+    "page": 4,
+    "section": "Overview",
+    "summary": "SPD can be viewed as distilling an internally selected version of the model own policy back into the original model.",
+    "confidence": "high"
+  },
+  {
+    "id": "S004",
+    "page": 5,
+    "section": "Capability Subspace Extraction",
+    "summary": "Correctness-aligned loss is computed only on token positions directly tied to task success, reducing influence of style or task-irrelevant noise.",
+    "confidence": "high"
+  },
+  {
+    "id": "E001",
+    "page": 5,
+    "section": "Equation 6",
+    "summary": "L_align(q,y) = - 1/|S| sum_{t in S} log p_theta_old(z_t | z_<t).",
+    "confidence": "high"
+  },
+  {
+    "id": "E002",
+    "page": 6,
+    "section": "Equations 9-12",
+    "summary": "Apply SVD to K/V gradient matrices, keep top-r right singular vectors, form projection matrices P_K and P_V, and project K/V activations during generation.",
+    "confidence": "high"
+  },
+  {
+    "id": "S005",
+    "page": 6,
+    "section": "Capability-Selective Distillation",
+    "summary": "Projection hooks do not modify model parameters; hooks only shape self-generated training distribution and are removed during fine-tuning/evaluation.",
+    "confidence": "high"
+  },
+  {
+    "id": "T001",
+    "page": 7,
+    "section": "Table 1",
+    "summary": "Domain-specific and in-domain generalization results across Qwen2.5/Qwen3/Llama backbones; SPD often improves over base, PSR and SSD.",
+    "confidence": "high"
+  },
+  {
+    "id": "T002",
+    "page": 8,
+    "section": "Table 2",
+    "summary": "QA-calibrated SPD transfers to Math and Code, e.g. GSM8K 11.0 base to 26.0 SPD-QA and MBPP 17.0 to 21.0.",
+    "confidence": "high"
+  },
+  {
+    "id": "F001",
+    "page": 8,
+    "section": "Figure 3",
+    "summary": "SPD-generated data are more compact and task-focused than base and SSD examples.",
+    "confidence": "high"
+  },
+  {
+    "id": "T003",
+    "page": 9,
+    "section": "Table 3",
+    "summary": "Before fine-tuning, SPD-generated data improve over SSD on MBPP, GSM8K, and BBH under Qwen2.5-0.5B-Instruct.",
+    "confidence": "high"
+  },
+  {
+    "id": "T004",
+    "page": 9,
+    "section": "Table 4",
+    "summary": "After fine-tuning, SPD reaches 25.5 MBPP, 22.0 GSM8K, 32.0 SVAMP, 49.0 MMLU, 38.7 BBH on Qwen2.5-0.5B-Instruct.",
+    "confidence": "high"
+  },
+  {
+    "id": "T005",
+    "page": 9,
+    "section": "Table 5",
+    "summary": "Correctness-aligned loss outperforms full-sequence loss across all reported domains; MBPP 25.5 vs 11.9 and GSM8K 22.0 vs 13.0.",
+    "confidence": "high"
+  },
+  {
+    "id": "F002",
+    "page": 10,
+    "section": "Figure 4",
+    "summary": "Performance remains stable across 20-500 calibration examples, suggesting small calibration sets can estimate useful capability subspaces.",
+    "confidence": "high"
+  },
+  {
+    "id": "T006",
+    "page": 15,
+    "section": "Table 6",
+    "summary": "Correctness-defining spans: MBPP assertion-relevant spans, MMLU answer letter after Answer:, GSM8K final numeric answer span.",
+    "confidence": "high"
+  },
+  {
+    "id": "A001",
+    "page": 19,
+    "section": "Algorithm 1",
+    "summary": "SPD procedure: collect correctness-aligned gradients, SVD, projection matrices, hooked generation, remove hooks, LoRA fine-tune.",
+    "confidence": "high"
+  }
+]

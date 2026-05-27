@@ -5,6 +5,13 @@
   <link>https://msxfXF.github.io</link>
   <description>分享、阅读、文章解读与思考札记。</description>
   <item>
+    <title>SPD 论文精读：不用外部信号，如何把模型自己的能力“投影”出来？</title>
+    <link>https://msxfXF.github.io/posts/spd-2605-22675-reading/</link>
+    <guid>https://msxfXF.github.io/posts/spd-2605-22675-reading/</guid>
+    <pubDate>Wed, 27 May 2026 00:00:00 GMT</pubDate>
+    <description>解读 Self-Policy Distillation 如何用正确性 token 的梯度抽取能力子空间，再用 KV 投影生成更可蒸馏的数据。</description>
+  </item>
+<item>
     <title>SkillOpt 论文精读：把 Agent Skill 当成可训练参数</title>
     <link>https://msxfXF.github.io/posts/skillopt-2605-23904-reading/</link>
     <guid>https://msxfXF.github.io/posts/skillopt-2605-23904-reading/</guid>
