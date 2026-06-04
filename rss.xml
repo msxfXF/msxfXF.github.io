@@ -5,6 +5,13 @@
   <link>https://msxfXF.github.io</link>
   <description>分享、阅读、文章解读与思考札记。</description>
   <item>
+    <title>从轨迹到技能：模型自动生成 Agent Skills 全生命周期的系统研究</title>
+    <link>https://msxfXF.github.io/posts/skill-lifecycle-study-reading/</link>
+    <guid>https://msxfXF.github.io/posts/skill-lifecycle-study-reading/</guid>
+    <pubDate>Thu, 04 Jun 2026 00:00:00 GMT</pubDate>
+    <description>精读 arXiv 2605.23899，全面解析 Agent Skill 生命周期三阶段（经验生成、技能抽取、技能消费）中的关键发现与工程启示。</description>
+  </item>
+<item>
     <title>SPD 论文精读：不用外部信号，如何把模型自己的能力“投影”出来？</title>
     <link>https://msxfXF.github.io/posts/spd-2605-22675-reading/</link>
     <guid>https://msxfXF.github.io/posts/spd-2605-22675-reading/</guid>
