@@ -1,0 +1,380 @@
+---
+title: 从轨迹到技能：模型自动生成 Agent Skills 全生命周期的系统研究
+description: 精读 arXiv 2605.23899，全面解析 Agent Skill 生命周期三阶段（经验生成、技能抽取、技能消费）中的关键发现与工程启示。
+date: 2026-06-04
+tags: [Paper Reading, AI, LLM, Research]
+---
+
+<section class="note-hero">
+  <p class="note-kicker">Paper Reading</p>
+  <h2>一句话：第一个系统性研究"模型自己给自己提炼 Skill"全链路有效性的工作。</h2>
+  <p>适合读者：对 LLM Agent 系统、Skill/Memory 机制、Agent 自我进化感兴趣的研究者和工程师。</p>
+</section>
+
+<blockquote class="pull-quote">
+  <strong>论文</strong>：From Raw Experience to Skill Consumption: A Systematic Study of Model-Generated Agent Skills<br>
+  <strong>作者</strong>：Zisu Huang, Jingwen Xu, Yifan Yang et al. (Fudan University &amp; Microsoft Research &amp; SJTU)<br>
+  <strong>链接</strong>：<a href="https://arxiv.org/abs/2605.23899">arXiv:2605.23899</a> (May 2026)<br>
+  <strong>阅读时长</strong>：约 20 分钟<br>
+  <strong>难度</strong>：中等（需了解 LLM Agent 基本概念、Prompt Engineering）
+</blockquote>
+
+<!-- ===== TL;DR ===== -->
+<section>
+  <h2>TL;DR</h2>
+  <ul>
+    <li>这是第一篇<strong>系统性覆盖 Skill 全生命周期</strong>（经验生成 → 技能抽取 → 技能消费）的大规模实证研究。</li>
+    <li>横跨 5 个领域（ALFWorld / SpreadsheetBench / SWE-bench / SEAL / BFCL）、6 个 Target 模型、5 个 Extractor 模型，共计数百组实验。</li>
+    <li>提出两个新指标：<strong>Extraction Efficacy (EE)</strong>（抽取者能力）和 <strong>Target Evolvability (TE)</strong>（消费者进化力）。</li>
+    <li>核心发现：模型自动抽取的 Skill 在多数场景有效（正 Δ），但存在显著方差；决定 Skill 质量的不是格式/文笔，而是<strong>失败机制编码、可执行的操作级指令、高风险动作黑名单</strong>。</li>
+    <li>基于对比分析构建了 Meta-Skill Guided Extraction，用 3 维验证过的指导 rubric 平均提升 +1.55pp。</li>
+  </ul>
+</section>
+
+<!-- ===== 问题 ===== -->
+<section>
+  <h2>1. 这篇论文到底解决什么问题？</h2>
+  <p>
+    现代 LLM Agent 通过在推理时加载"Skill"（结构化的过程性知识片段）来复用历史经验，无需重新训练。
+    商业 Agent 平台（如 Codex、Cursor、各种 Agent Framework）都已将 Skill 作为标配组件。
+    但问题是：
+  </p>
+  <ol>
+    <li><strong>手写 Skill 不 scale</strong>：Agent 能力和部署领域飞速扩展，人工维护跟不上。</li>
+    <li><strong>模型自动生成的 Skill 到底有没有用？</strong> 现有工作各自为政，没有统一评估框架。</li>
+    <li><strong>什么决定了 Skill 的有效性？</strong> 是抽取方法？是经验质量？还是消费模型能力？</li>
+  </ol>
+  <p>
+    已有 benchmark（SkillsBench、SWE-Skills-Bench、SkillCraft）只覆盖 lifecycle 的一个阶段。
+    本文第一次<strong>端到端、跨阶段、跨模型、跨领域</strong>地研究这个问题。
+  </p>
+</section>
+
+<!-- ===== 方法总览 ===== -->
+<section>
+  <h2>2. 方法总览：Skill 全生命周期 Pipeline</h2>
+  <figure>
+    <img src="/assets/papers/skill-lifecycle-study/fig1_overview_pipeline.png" alt="Skill Lifecycle Pipeline Overview" style="max-width:100%;border-radius:8px;">
+    <figcaption><strong>图 1：</strong>研究框架全貌。三阶段 Pipeline 覆盖经验生成、技能抽取、技能消费，并在各阶段进行深度分析。出处：论文 Figure 1。</figcaption>
+  </figure>
+
+  <div class="insight-grid">
+    <article class="insight-card">
+      <span>Stage 1</span>
+      <h3>经验生成</h3>
+      <p>Target 模型 M 在 train split 上执行任务，产生经验池 T = {(task, trajectory, outcome)}，包含成功和失败轨迹。</p>
+    </article>
+    <article class="insight-card">
+      <span>Stage 2</span>
+      <h3>技能抽取</h3>
+      <p>Extractor 模型 E 对经验池做 per-trajectory 分析 + 层次化合并（hierarchical consolidation），输出结构化 Skill。</p>
+    </article>
+    <article class="insight-card">
+      <span>Stage 3</span>
+      <h3>技能消费</h3>
+      <p>同一个 Target M 带着抽取出的 Skill 在 test split 上评测，衡量 Δ = Perf(with skill) - Perf(baseline)。</p>
+    </article>
+  </div>
+
+  <section class="callout-panel">
+    <h3>设计关键决策</h3>
+    <ul>
+      <li><strong>Skill 来源于 Target 自己的经验</strong>：模拟真实部署场景（从自己的 log 中自我进化）。</li>
+      <li><strong>Extraction Framework 故意极简</strong>：不加领域 heuristic、不做 filter/optimization，让实验差异归因于 Extractor 能力本身。</li>
+      <li><strong>固定 Target 变 Extractor（EE）/固定 Extractor 变 Target（TE）</strong>：解耦两端贡献。</li>
+    </ul>
+  </section>
+</section>
+
+<!-- ===== 抽取框架 ===== -->
+<section>
+  <h2>3. 核心模块拆解：Extraction Framework</h2>
+
+  <h3>3.1 Per-trajectory 分析（Map 阶段）</h3>
+  <p>
+    Extractor 独立处理每条轨迹 τ<sub>i</sub>，产出一个 pattern set u<sub>i</sub>（每条最多 K=3 个 pattern）。
+    Pattern 包含 success patterns（成功策略）和 failure patterns（失败模式）。
+    这一步<strong>完全可并行化</strong>。
+  </p>
+
+  <h3>3.2 层次化合并（Reduce 阶段）</h3>
+  <p>
+    以 group size G=10 做 tree-structured reduction：每层将 G 个 pattern sets 合并为 1 个，去重、泛化、协调冲突，
+    直到归并为单一 consolidated pattern set。最终通过 tool-calling 操作将其转为结构化 Skill（name/description/body/references/scripts）。
+  </p>
+
+  <h3>3.3 Skill 表示与消费</h3>
+  <p>
+    Skill 遵循 <a href="https://github.com/agentskills/agentskills">Agent Skills 开放标准</a>，字段包括 name、description、body（Markdown 过程性指令）、可选 references 和 scripts。
+    消费时：
+  </p>
+  <ul>
+    <li><strong>单 Skill</strong>：直接 inline 到 system prompt。</li>
+    <li><strong>多 Skill</strong>：通过 progressive disclosure（list_skills → view_skill → read_skill_file）按需加载。</li>
+  </ul>
+</section>
+
+<!-- ===== 实验结果 ===== -->
+<section>
+  <h2>4. 主实验结果：Skills 到底有没有用？</h2>
+
+  <section class="callout-panel">
+    <h3>实验规模</h3>
+    <p>5 Domains × 6 Targets × 5 Extractors = 150 组 (E, M, D) 实验。每组都有完整的经验生成 → 抽取 → 消费流程。</p>
+  </section>
+
+  <h3>4.1 总体结论</h3>
+  <div class="insight-grid">
+    <article class="insight-card">
+      <span>Finding 1</span>
+      <h3>Skill 总体有效</h3>
+      <p>多数 (E, M, D) 组合产生正 Δ。SpreadsheetBench 和 BFCL 几乎全面正收益；SWE-bench 也普遍有效（30 组中 28 组 Δ > 0）。</p>
+    </article>
+    <article class="insight-card">
+      <span>Finding 2</span>
+      <h3>方差巨大</h3>
+      <p>同一领域，Δ 从 -5.72pp 到 +14.66pp 不等。Extractor-Target 匹配非常关键。</p>
+    </article>
+    <article class="insight-card">
+      <span>Finding 3</span>
+      <h3>已强模型难受益</h3>
+      <p>Gemini-3.1-Pro 在 ALFWorld 基线 87.56%，Skill 几乎无法再提升；而较弱模型提升更明显。</p>
+    </article>
+    <article class="insight-card">
+      <span>Finding 4</span>
+      <h3>负迁移存在</h3>
+      <p>Qwen3.5-9B 和 Gemini-3.1-FL 在 ALFWorld 出现全面负 Δ，说明 Skill 消费需要一定能力门槛。</p>
+    </article>
+  </div>
+
+  <h3>4.2 EE vs TE 分析</h3>
+  <table style="width:100%;border-collapse:collapse;margin:1em 0;font-size:0.9em;">
+    <thead>
+      <tr style="background:#f5f5f5;"><th style="padding:8px;text-align:left;">指标</th><th style="padding:8px;">含义</th><th style="padding:8px;">Top Performer</th></tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:8px;"><strong>EE (Extraction Efficacy)</strong></td><td style="padding:8px;">固定 Extractor，对所有 Target 平均 Δ</td><td style="padding:8px;">GPT-5.4-mini 和 Gemini-3.1-FL 表现最好</td></tr>
+      <tr><td style="padding:8px;"><strong>TE (Target Evolvability)</strong></td><td style="padding:8px;">固定 Target，所有 Extractor 给它的平均 Δ</td><td style="padding:8px;">GPT-5.4 和 Gemini-3.1-FL 受益最大</td></tr>
+    </tbody>
+  </table>
+  <p>
+    有趣发现：<strong>最好的 Extractor 不一定是最强的模型</strong>。GPT-5.4-mini 在多个领域的 EE 超过 GPT-5.4，
+    说明抽取能力和任务解题能力不完全正相关。
+  </p>
+</section>
+
+<!-- ===== 深度分析 ===== -->
+<section>
+  <h2>5. 深度分析：三个阶段各有什么发现？</h2>
+
+  <h3>5.1 经验生成：成功轨迹 vs 失败轨迹？</h3>
+  <figure>
+    <img src="/assets/papers/skill-lifecycle-study/fig2_experience_analysis.png" alt="Experience Analysis" style="max-width:100%;border-radius:8px;">
+    <figcaption><strong>图 2：</strong>不同经验池组成（success-only / failure-only / mixed）对下游 Skill 质量的影响。出处：论文 Figure 2。</figcaption>
+  </figure>
+  <ul>
+    <li><strong>混合经验池（包含成功+失败）通常最好</strong>：失败轨迹提供了"不该做什么"的关键信号。</li>
+    <li>但在部分领域（如 SWE-bench），pure success 也足够好，因为成功轨迹本身已包含大量试错。</li>
+    <li>经验池大小有 diminishing returns：增加到一定量后 Skill 质量趋于饱和。</li>
+  </ul>
+
+  <h3>5.2 技能抽取：什么让 Skill 好用？</h3>
+  <figure>
+    <img src="/assets/papers/skill-lifecycle-study/fig3_skill_quality_analysis.png" alt="Skill Quality Analysis" style="max-width:100%;border-radius:8px;">
+    <figcaption><strong>图 3：</strong>Skill 质量对比分析——高 Δ vs 低 Δ 的 Skill 在哪些维度上有本质差异。出处：论文 Figure 3。</figcaption>
+  </figure>
+
+  <section class="callout-panel">
+    <h3>核心发现：格式不影响，内容才关键</h3>
+    <p>
+      将同一 Skill 改写为 ordered list / unordered list / checklist / prose 四种格式后评测：
+      <strong>格式无显著影响</strong>（所有 p > 0.34）。真正决定 Skill 有效性的是其内容中编码的知识类型。
+    </p>
+  </section>
+
+  <p>通过对比分析 151 对高/低 Δ Skill，论文发现了<strong>三个经过效用验证的质量维度</strong>：</p>
+  <div class="insight-grid">
+    <article class="insight-card">
+      <span>Dim 1</span>
+      <h3>失败机制编码</h3>
+      <p>好 Skill 能编码"为什么 Agent 会失败"（如公式注入假象、索引偏移），而非仅说"注意这里可能出错"。Better-rate: 65.5%</p>
+    </article>
+    <article class="insight-card">
+      <span>Dim 2</span>
+      <h3>可执行的操作级指令</h3>
+      <p>好 Skill 包含引用具体 tool/对象的 step-level 操作流程，而非抽象的过程性建议。Better-rate: 66.0%</p>
+    </article>
+    <article class="insight-card">
+      <span>Dim 3</span>
+      <h3>高风险动作黑名单</h3>
+      <p>好 Skill 明确禁止特定有害的动作模式（如"永远不要在 headless 环境中写 Excel 公式"）。Better-rate: 64.6%</p>
+    </article>
+  </div>
+
+  <h3>5.3 技能消费：不同模型如何响应 Skill？</h3>
+  <figure>
+    <img src="/assets/papers/skill-lifecycle-study/fig4_consumption_analysis.png" alt="Consumption Analysis" style="max-width:100%;border-radius:8px;">
+    <figcaption><strong>图 4：</strong>不同 Target 模型消费 Skill 后的行为变化分析。出处：论文 Figure 4。</figcaption>
+  </figure>
+  <ul>
+    <li><strong>强模型：策略矫正为主</strong>。GPT-5.4 消费 Skill 后主要是"选择更可靠的策略"（如用 Python 算值而非写 formula），不是获得新能力。</li>
+    <li><strong>弱模型：双刃剑</strong>。Qwen3.5-9B 消费 Skill 后倾向于采用更复杂的流程，增加了结构正确性但也增加了执行出错风险。</li>
+    <li><strong>能力门槛</strong>：存在一个"消费能力门槛"——如果模型太弱，无法正确执行 Skill 中的指令，反而会导致负迁移。</li>
+  </ul>
+</section>
+
+<!-- ===== Meta-Skill ===== -->
+<section>
+  <h2>6. From Diagnosis to Intervention：Meta-Skill Guided Extraction</h2>
+  <figure>
+    <img src="/assets/papers/skill-lifecycle-study/fig5_meta_skill_guided.png" alt="Meta-Skill Guided Extraction" style="max-width:100%;border-radius:8px;">
+    <figcaption><strong>图 5：</strong>Meta-Skill Guided Extraction 效果对比。3-dim 验证 rubric 全面优于 7-dim 直觉 rubric 和无引导基线。出处：论文 Figure 5。</figcaption>
+  </figure>
+
+  <p>基于上述分析，论文提出了一个自然的 follow-up：<strong>能否把对"好 Skill"的理解反馈给抽取过程本身？</strong></p>
+
+  <h3>做法</h3>
+  <ol>
+    <li>从对比分析中提炼出 7 个候选质量维度。</li>
+    <li>通过下游效用验证筛选出 3 个有效维度（即上述三个）。</li>
+    <li>将这 3 维 rubric 作为 "Extraction Quality Guidance" 注入到抽取 prompt 中。</li>
+  </ol>
+
+  <h3>结果</h3>
+  <table style="width:100%;border-collapse:collapse;margin:1em 0;font-size:0.9em;">
+    <thead>
+      <tr style="background:#f5f5f5;">
+        <th style="padding:8px;">Guidance</th>
+        <th style="padding:8px;">平均 Δ vs Original</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:8px;">Plausibility rubric (7-dim, 未验证)</td><td style="padding:8px;color:#c00;">-0.59 pp</td></tr>
+      <tr><td style="padding:8px;"><strong>Validated rubric (3-dim, 效用验证)</strong></td><td style="padding:8px;color:#080;"><strong>+1.55 pp</strong></td></tr>
+    </tbody>
+  </table>
+
+  <section class="callout-panel">
+    <h3>关键教训</h3>
+    <p>
+      直接让 LLM"想象什么是好 Skill"（plausibility rubric）不仅无效，还会伤害效果。
+      只有经过<strong>下游效用验证</strong>的维度才能可靠地指导抽取。
+      这与 RLHF 中"好的 reward model 需要 ground truth signal"的思路一致。
+    </p>
+  </section>
+</section>
+
+<!-- ===== 对比案例 ===== -->
+<section>
+  <h2>7. 对比案例：好 Skill vs 差 Skill</h2>
+
+  <h3>SpreadsheetBench 案例</h3>
+  <div class="insight-grid">
+    <article class="insight-card" style="border-left:4px solid #080;">
+      <span>高 Δ (+14.7)</span>
+      <h3>Gemini-3.1-FL 抽取</h3>
+      <p>
+        编码了三个领域特定失败机制：<br>
+        (1) Formula Injection Fallacy—headless 环境不执行公式，必须预计算静态值；<br>
+        (2) 逆序迭代避免 index-shifting；<br>
+        (3) 动态寻址替代硬编码坐标。<br>
+        每个机制都配有可执行的补救措施。
+      </p>
+    </article>
+    <article class="insight-card" style="border-left:4px solid #c00;">
+      <span>低 Δ (+4.3)</span>
+      <h3>GPT-5.4 抽取</h3>
+      <p>
+        停留在过程级指导（"先确认合约"、"最小化编辑"、"验证结果"），
+        合理但太抽象，无法阻止实际会触发的具体失败模式。
+      </p>
+    </article>
+  </div>
+
+  <h3>ALFWorld 案例</h3>
+  <div class="insight-grid">
+    <article class="insight-card" style="border-left:4px solid #080;">
+      <span>高 Δ (+7.5)</span>
+      <h3>Gemini-3.1-Pro 抽取</h3>
+      <p>
+        提供了三个映射到 ALFWorld 动作词汇的可执行 pattern：<br>
+        (1) Deep Inspection—必须显式 open 关闭容器；<br>
+        (2) Active State Transformation pipeline；<br>
+        (3) 先导航开门再放置的前置条件解决。
+      </p>
+    </article>
+    <article class="insight-card" style="border-left:4px solid #c00;">
+      <span>低 Δ (+1.5)</span>
+      <h3>GPT-5.4 抽取</h3>
+      <p>
+        描述了相同的高层逻辑（"找到瓶颈"、"管理前置条件"），
+        但抽象程度太高，无法直接对应 ALFWorld 的 action space。
+      </p>
+    </article>
+  </div>
+</section>
+
+<!-- ===== Q&A ===== -->
+<section>
+  <h2>8. 深度理解 Q&A</h2>
+
+  <dl>
+    <dt><strong>Q1: 为什么 GPT-5.4-mini 作为 Extractor 经常比 GPT-5.4 好？</strong></dt>
+    <dd>论文发现更强的模型做 Extractor 时倾向于生成更抽象、更"优雅"的 Skill——语言更好但可执行性更差。较小模型反而因为能力限制被迫停留在操作级细节，这恰好是高效 Skill 所需的。</dd>
+
+    <dt><strong>Q2: Skill 消费的"能力门槛"大致在哪？</strong></dt>
+    <dd>从实验看，Qwen3.5-9B（~9B 参数）在多个领域出现负迁移，35B 基本能正向受益。但这不纯粹是参数量问题——Gemini-3.1-FL 虽然是大模型但在 ALFWorld 也出现负迁移，可能与该模型对 embodied task 的 instruction following 能力有关。</dd>
+
+    <dt><strong>Q3: 格式真的完全不 matter 吗？</strong></dt>
+    <dd>在控制变量实验中（同一 Skill 内容，四种格式），Friedman test 显示格式效应的 σ-ratio 全部 &lt; 1（低于 run-to-run 噪声），即格式效应小于随机评测噪声。相比之下，Extractor 的效应 σ-ratio 最高达 4.53。</dd>
+
+    <dt><strong>Q4: 经验池需要多大？</strong></dt>
+    <dd>论文发现存在 diminishing returns——达到一定量后（具体取决于领域复杂度），增加经验不再显著提升 Skill 质量。这与直觉一致：Skill 编码的是领域级的 recurring patterns，而非 per-task solutions。</dd>
+
+    <dt><strong>Q5: 这个 Framework 如何推广到实际系统？</strong></dt>
+    <dd>实际意义非常直接：(1) 部署后收集 Agent 交互 log；(2) 用 GPT-5.4-mini 等 Extractor 做 map-reduce 抽取；(3) 注入 system prompt 或通过 skill tool protocol 暴露；(4) 定期用下游指标验证 Skill 效用并迭代。论文的 meta-skill guidance 可作为抽取质量把关的轻量干预。</dd>
+
+    <dt><strong>Q6: 与 RL-based 方法（如 ProcMem、CoEvoSkills）的关系？</strong></dt>
+    <dd>本文的 extraction framework 是 prompt-based distillation 的极简版。RL-based 方法（如 ProcMem 的非参数 PPO）理论上能进一步优化 Skill，但本文证明了即使是最简单的 map-reduce 抽取也能产生显著收益——RL 的额外复杂度是否值得需要在同一框架下对比。</dd>
+
+    <dt><strong>Q7: 负迁移的根因是什么？</strong></dt>
+    <dd>行为分析显示主要有两类：(1) Skill 引导模型采用更复杂的流程但模型能力不足以执行（如 Qwen-9B）；(2) Skill 编码了对当前 Target 不适用的策略（如为 Python-native 工作流设计的 Skill 被注入到偏好 formula-native 的模型）。</dd>
+  </dl>
+</section>
+
+<!-- ===== 工程启发 ===== -->
+<section>
+  <h2>9. 工程/研究启发</h2>
+  <div class="insight-grid">
+    <article class="insight-card">
+      <span>01</span>
+      <h3>Skill 作为 Agent 自进化原语</h3>
+      <p>本文证明了 log → skill → self-improvement 闭环在实践中可行。对于 Agent 系统，应将 Skill 抽取作为标准 post-deployment 流程。</p>
+    </article>
+    <article class="insight-card">
+      <span>02</span>
+      <h3>抽取器选型</h3>
+      <p>不要默认用最强模型做抽取——中等模型（如 GPT-5.4-mini）可能更好。选型时应考虑 "operational specificity" 倾向。</p>
+    </article>
+    <article class="insight-card">
+      <span>03</span>
+      <h3>Skill 质量把关</h3>
+      <p>写 Skill 时检查三件事：(1) 编码了哪些具体失败模式？(2) 指令是否可执行到 tool-level？(3) 有没有明确的"不要做 X"？</p>
+    </article>
+    <article class="insight-card">
+      <span>04</span>
+      <h3>消费端适配</h3>
+      <p>强模型给 strategy correction 就够了；弱模型需要更 defensive 的 Skill（更短、更保守、避免引入复杂流程）。</p>
+    </article>
+  </div>
+</section>
+
+<!-- ===== 参考 ===== -->
+<section>
+  <h2>参考与出处</h2>
+  <ul>
+    <li>Huang, Z., Xu, J., Yang, Y. et al. "From Raw Experience to Skill Consumption: A Systematic Study of Model-Generated Agent Skills." arXiv:2605.23899, May 2026.</li>
+    <li>Agent Skills Open Standard: <a href="https://github.com/agentskills/agentskills">github.com/agentskills/agentskills</a></li>
+    <li>本文覆盖的 Benchmark: ALFWorld, SpreadsheetBench, SWE-bench-Verified, SEAL-0, BFCL-v4</li>
+  </ul>
+</section>
